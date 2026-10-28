@@ -28,7 +28,9 @@ DEFAULT_CONFIG = {
     "port": 8823,
     "public_url": "",
     "tls": {"enabled": True, "cert": "", "key": ""},
-    "auth": {"password_hash": "", "session_ttl": 43200},
+    "auth": {"password_hash": "", "session_ttl": 43200,
+             # Menu linkiyle sifresiz giris; bos ise devre disi.
+             "login_token": "", "token_login": True},
     "allow_ips": [],
     "frame_ancestors": [],
     "cookie_samesite": "Strict",

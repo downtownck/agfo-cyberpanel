@@ -1,4 +1,4 @@
-# AGFO SSH Terminal 1.2.0
+# AGFO SSH Terminal 1.3.0
 
 CyberPanel sunucunuzda çalışan, tarayıcıdan kullanılan **PuTTY tarzı SSH terminali**.
 Sunucuya **root erişimi** verir: hem sunucunun kendi root kabuğunu açar, hem de
@@ -73,6 +73,20 @@ AGFO_SSH_DOMAIN=agfocert.net AGFO_SSH_ALLOW_IPS="78.1.2.3" bash install.sh
 
 Aynı betik yükseltme için de kullanılır: mevcut `config.json`, kayıtlı oturumlar,
 anahtarlar ve panel şifresi korunur, yalnız uygulama dosyaları yenilenir.
+
+## Şifresiz giriş (menü linki)
+
+Kurulumda panel şifresinden bağımsız bir **giriş jetonu** üretilir. Menü linki
+bu jetonu taşır (`?t=…`), tıklayınca şifre sorulmadan içeri girersiniz. Jeton
+doğrulanır doğrulanmaz tarayıcı temiz adrese yönlendirilir, böylece jeton adres
+çubuğunda ve geçmişte kalmaz; diğer parametreler (`open=root`) korunur.
+
+Jeton da bir anahtardır: linki görebilen CyberPanel yöneticisi sunucuya root
+erişir — zaten CyberPanel yöneticisi olduğu için bu kabul edilebilir bir sınır.
+Yine de `AGFO_SSH_ALLOW_IPS` ile sabit IP'nize kilitlemenizi öneririm.
+Kapatmak için `config.json` içinde `auth.token_login` değerini `false` yapın;
+jetonu yenilemek için `auth.login_token` alanını silip kurulumu tekrarlayın.
+Hatalı jeton denemeleri de şifre gibi IP başına kilitlenir.
 
 ## Güvenlik — önce bunu okuyun
 

@@ -15,9 +15,9 @@ Ortak tasarım kuralları:
 
 | Araç | Sürüm | Ne yapar |
 |---|---|---|
-| [agfo-ssh-terminal](agfo-ssh-terminal/) | 1.2.0 | Tarayıcıdan PuTTY tarzı SSH terminali; root kabuğu, sekmeler, kayıtlı oturumlar |
-| [agfo-ssh-menu](agfo-ssh-menu/) | 1.2.0 | SSH Terminal bağlantısını CyberPanel kenar menüsüne ekler |
-| [agfo-firewall-ai](agfo-firewall-ai/) | 1.0.0 | CrowdSec üzerine AI destekli güvenlik duvarı paneli; öneri üretir, siz onaylarsınız |
+| [agfo-ssh-terminal](agfo-ssh-terminal/) | 1.3.0 | Tarayıcıdan PuTTY tarzı SSH terminali; root kabuğu, sekmeler, kayıtlı oturumlar |
+| [agfo-ssh-menu](agfo-ssh-menu/) | 1.3.0 | CyberPanel kenar menüsünü düzenler: girdi ekler, günceller, siler |
+| [agfo-firewall-ai](agfo-firewall-ai/) | 1.1.0 | CrowdSec üzerine AI destekli güvenlik duvarı paneli; öneri üretir, siz onaylarsınız |
 
 ## Hızlı kurulum
 
@@ -34,6 +34,15 @@ AGFO_FW_DOMAIN=alanadiniz.com AGFO_FW_ALLOW_IPS="sabit.ip.adresiniz" bash agfo-f
 
 Her aracın kendi klasöründeki `README.md` dosyası tüm ortam değişkenlerini,
 güvenlik notlarını ve sorun giderme adımlarını içerir.
+
+## Menüden şifresiz giriş
+
+Her panel kurulumda, şifresinden bağımsız bir giriş jetonu üretir. Menü paketi
+linkleri bu jetonla yazar; tıklayınca şifre sorulmaz, jeton doğrulanır
+doğrulanmaz tarayıcı temiz adrese yönlendirilir. Jetonu görebilen kişi
+CyberPanel yöneticisidir ve zaten sunucuya hâkimdir; yine de panelleri
+`allow_ips` ile sabit IP'nize kilitlemek en iyisidir. Kapatmak için ilgili
+panelin `config.json` dosyasında `auth.token_login: false`.
 
 ## Güvenlik notu
 

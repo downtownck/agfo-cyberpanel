@@ -15,12 +15,15 @@
 #   AGFO_FW_INSTALL_CROWDSEC=1     0 = CrowdSec kurulumunu atla
 #   AGFO_FW_BOUNCER=auto           auto | nftables | iptables | none
 #   AGFO_FW_SKIP_FIREWALL=0        1 = guvenlik duvarina dokunma
+#   AGFO_FW_FRAME_ANCESTORS="https://IP:8090"
+#                                  paneli CyberPanel sayfasi icinde cerceve
+#                                  (iframe) olarak gostermek icin
 # =============================================================================
 set -euo pipefail
 
 APP_NAME="AGFO Firewall AI"
 APP_SLUG="agfo-firewall-ai"
-APP_VERSION="1.0.0"
+APP_VERSION="1.1.0"
 INSTALL_DIR="/opt/${APP_SLUG}"
 UNIT_PATH="/etc/systemd/system/${APP_SLUG}.service"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -312,11 +315,22 @@ if [ -z "${AGFO_FW_PASSWORD:-}" ] && [ -z "$EXISTING_HASH" ]; then
   GEN_PASSWORD="$("$PYBIN" -c 'import secrets,string;a=string.ascii_letters+string.digits;print("".join(secrets.choice(a) for _ in range(20)))')"
 fi
 
+# Menu linkinde kullanilacak otomatik giris jetonu (sifreden bagimsiz).
+EXISTING_TOKEN=""
+if [ -f "${INSTALL_DIR}/config/config.json" ]; then
+  EXISTING_TOKEN="$("$PYBIN" -c "import json;print(json.load(open('${INSTALL_DIR}/config/config.json')).get('auth',{}).get('login_token',''))" 2>/dev/null || true)"
+fi
+LOGIN_TOKEN="${EXISTING_TOKEN}"
+if [ -z "$LOGIN_TOKEN" ]; then
+  LOGIN_TOKEN="$("$PYBIN" -c 'import secrets;print(secrets.token_urlsafe(32))')"
+fi
+
 say "config.json yaziliyor"
 AGFO_FW_PASSWORD="${AGFO_FW_PASSWORD:-$GEN_PASSWORD}" \
 AGFO_CFG_PORT="$PORT" AGFO_CFG_BIND="$BIND" AGFO_CFG_TLS="$TLS" \
 AGFO_CFG_CERT="${CERT:-}" AGFO_CFG_KEY="${KEY:-}" AGFO_CFG_ALLOW="$ALLOW_IPS" \
-AGFO_CFG_PUBLIC="$PUBLIC_URL" AGFO_CFG_DIR="${INSTALL_DIR}/config" AGFO_CFG_APP="${INSTALL_DIR}/app" \
+AGFO_CFG_PUBLIC="$PUBLIC_URL" AGFO_CFG_FRAME="${AGFO_FW_FRAME_ANCESTORS:-}" AGFO_CFG_FRAME_SET="$([ "${AGFO_FW_FRAME_ANCESTORS+x}" = "x" ] && echo 1 || echo 0)" \
+AGFO_CFG_TOKEN="$LOGIN_TOKEN" AGFO_CFG_DIR="${INSTALL_DIR}/config" AGFO_CFG_APP="${INSTALL_DIR}/app" \
 "$PYBIN" - <<'PYEOF'
 import json, os, sys
 app_dir = os.environ["AGFO_CFG_APP"]; cfg_dir = os.environ["AGFO_CFG_DIR"]
@@ -340,6 +354,10 @@ if os.environ.get("AGFO_CFG_CERT"):
     cfg["tls"]["cert"] = os.environ["AGFO_CFG_CERT"]
     cfg["tls"]["key"] = os.environ["AGFO_CFG_KEY"]
 cfg["allow_ips"] = [x.strip() for x in (os.environ.get("AGFO_CFG_ALLOW") or "").split(",") if x.strip()]
+if os.environ.get("AGFO_CFG_FRAME_SET") == "1":
+    cfg["frame_ancestors"] = [x.strip() for x in (os.environ.get("AGFO_CFG_FRAME") or "").split(",") if x.strip()]
+
+cfg["auth"]["login_token"] = os.environ.get("AGFO_CFG_TOKEN") or cfg["auth"].get("login_token") or ""
 
 pw = os.environ.get("AGFO_FW_PASSWORD") or ""
 if pw:
@@ -415,6 +433,8 @@ echo "============================================================"
 echo " ${APP_NAME} ${APP_VERSION} kuruldu"
 echo "============================================================"
 echo " Panel      : ${PUBLIC_URL}"
+echo " Menu linki : ${PUBLIC_URL}?t=${LOGIN_TOKEN}"
+echo "              (jeton sifresiz giris saglar; menu paketi bunu kendisi okur)"
 if [ -n "$GEN_PASSWORD" ]; then
 echo " Panel sifre: ${GEN_PASSWORD}"
 echo " ! Bu sifreyi simdi kaydedin; bir daha gosterilmez."

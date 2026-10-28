@@ -31,7 +31,7 @@ set -euo pipefail
 
 APP_NAME="AGFO SSH Terminal"
 APP_SLUG="agfo-ssh-terminal"
-APP_VERSION="1.2.0"
+APP_VERSION="1.3.0"
 INSTALL_DIR="/opt/${APP_SLUG}"
 UNIT_PATH="/etc/systemd/system/${APP_SLUG}.service"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -168,6 +168,16 @@ else
   PUBLIC_URL="${SCHEME}://${SRV_IP}:${PORT}/"
 fi
 
+# Menu linkinde kullanilacak otomatik giris jetonu (sifreden bagimsiz).
+EXISTING_TOKEN=""
+if [ -f "${INSTALL_DIR}/config/config.json" ]; then
+  EXISTING_TOKEN="$("$PYBIN" -c "import json;print(json.load(open('${INSTALL_DIR}/config/config.json')).get('auth',{}).get('login_token',''))" 2>/dev/null || true)"
+fi
+LOGIN_TOKEN="${EXISTING_TOKEN}"
+if [ -z "$LOGIN_TOKEN" ]; then
+  LOGIN_TOKEN="$("$PYBIN" -c 'import secrets;print(secrets.token_urlsafe(32))')"
+fi
+
 say "config.json yaziliyor"
 # Yukseltmede mevcut sifre korunur: yalnizca hic sifre yoksa yenisi uretilir.
 EXISTING_HASH=""
@@ -186,7 +196,7 @@ AGFO_CFG_ALLOW="$ALLOW_IPS" AGFO_CFG_LOG="$SESSION_LOG" \
 AGFO_CFG_PUBLIC="$PUBLIC_URL" \
 AGFO_CFG_FRAME="${AGFO_SSH_FRAME_ANCESTORS:-}" AGFO_CFG_FRAME_SET="$FRAME_SET" \
 AGFO_CFG_SAMESITE="${AGFO_SSH_COOKIE_SAMESITE:-}" AGFO_CFG_SAMESITE_SET="$SAMESITE_SET" \
-AGFO_CFG_DIR="${INSTALL_DIR}/config" AGFO_CFG_APP="${INSTALL_DIR}/app" \
+AGFO_CFG_TOKEN="$LOGIN_TOKEN" AGFO_CFG_DIR="${INSTALL_DIR}/config" AGFO_CFG_APP="${INSTALL_DIR}/app" \
 "$PYBIN" - <<'PYEOF'
 import json, os, sys
 
@@ -229,6 +239,8 @@ if os.environ.get("AGFO_CFG_SAMESITE_SET") == "1":
         val = "Strict"
     cfg["cookie_samesite"] = val
     print("[agfo-ssh-terminal] cerez SameSite=%s" % val)
+
+cfg["auth"]["login_token"] = os.environ.get("AGFO_CFG_TOKEN") or cfg["auth"].get("login_token") or ""
 
 pw = os.environ.get("AGFO_SSH_PASSWORD") or ""
 if pw:
@@ -327,7 +339,7 @@ else
 echo " Panel sifre: (onceki kurulumdan korundu)"
 fi
 echo " Erisim     : panel root yetkisiyle calisir (yerel root kabugu dahil)"
-echo " Menu linki : ${PUBLIC_URL}?open=root"
+echo " Menu linki : ${PUBLIC_URL}?t=${LOGIN_TOKEN}&open=root"
 echo "              (yeni sekmede acin; tiklayinca dogrudan root kabugu gelir)"
 echo " Servis     : systemctl status ${APP_SLUG}"
 echo " Gunluk     : journalctl -u ${APP_SLUG} -f"

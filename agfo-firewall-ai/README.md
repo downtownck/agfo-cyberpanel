@@ -1,4 +1,4 @@
-# AGFO Firewall AI 1.0.0
+# AGFO Firewall AI 1.1.0
 
 Açık kaynak **CrowdSec** motorunun üzerine kurulan, yapay zekâ destekli güvenlik
 duvarı yönetim paneli. Sunucudaki saldırı olaylarını okur, seçtiğiniz AI
@@ -100,6 +100,18 @@ bırakırsanız sağlayıcının varsayılanı kullanılır.
 
 Anahtarlar `config/providers.json` içinde 0600 izniyle tutulur ve panele bir
 daha geri gönderilmez (yalnız son 4 hane gösterilir).
+
+## Şifresiz giriş (menü linki)
+
+Kurulumda şifreden bağımsız bir **giriş jetonu** üretilir; menü linki bunu
+`?t=…` olarak taşır ve tıklayınca şifre sorulmaz. Jeton doğrulanınca tarayıcı
+temiz adrese yönlendirilir, jeton adres çubuğunda kalmaz. Kapatmak için
+`auth.token_login: false`, yenilemek için `auth.login_token` alanını silip
+kurulumu tekrarlayın. Hatalı denemeler IP başına kilitlenir.
+
+Paneli CyberPanel sayfasının içinde çerçeve olarak göstermek isterseniz
+kurulumda `AGFO_FW_FRAME_ANCESTORS="https://SUNUCU:8090"` verin (varsayılan
+olarak çerçeveleme kapalıdır).
 
 ## Güvenlik
 

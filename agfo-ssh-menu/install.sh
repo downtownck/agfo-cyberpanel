@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 # =============================================================================
-# AGFO SSH Terminal - CyberPanel menu girdisi ekleyici
+# AGFO CyberPanel menu duzenleyici (1.3.0)
 #
-# Mevcut "AGFO Root Terminal" girdinizin sablondaki kalibini bulur, bir esini
-# olusturup "AGFO SSH Terminal" olarak hemen altina ekler. Degistirdigi her
-# dosyanin yedegini alir.
+# Varsayilan davranis:
+#   - Menuye "AGFO SSH Terminal" ve "AGFO Firewall AI" girdilerini ekler
+#     (kurulu olanlar icin), adreslerini otomatik giris jetonuyla yazar.
+#   - "AGFO Root Terminal" ve "AGFO SafeGuard" girdilerini kaldirir.
+#   - Linkler ayni sekmede acilir.
 #
-# Ortam degiskenleri (hepsi istege bagli):
-#   AGFO_MENU_URL=https://IP:8822/?open=root   link adresi (bos ise otomatik)
-#   AGFO_MENU_LABEL="AGFO SSH Terminal"        menude gorunecek ad
-#   AGFO_MENU_ANCHOR="AGFO Root Terminal"      kalibi kopyalanacak mevcut girdi
-#   AGFO_MENU_ROOT=/usr/local/CyberCP          sablon dizini
-#   AGFO_MENU_SKIP_RESTART=0                   1 = lscpd'yi yeniden baslatma
+# Ortam degiskenleri:
+#   AGFO_MENU_REMOVE="A,B"      silinecek girdiler ("" = hicbiri)
+#   AGFO_MENU_ENTRIES="X|url"   eklenecek girdileri elle vermek icin
+#   AGFO_MENU_TARGET=self|blank ayni sekme / yeni sekme
+#   AGFO_MENU_NO_TOKEN=1        jetonsuz link yaz (panel sifre sorar)
+#   AGFO_MENU_ROOT=/usr/local/CyberCP
+#   AGFO_MENU_SKIP_RESTART=1    CyberPanel servisini yeniden baslatma
 # =============================================================================
 set -euo pipefail
 
@@ -20,36 +23,62 @@ say() { printf '[agfo-ssh-menu] %s\n' "$*"; }
 die() { printf '[agfo-ssh-menu] HATA: %s\n' "$*" >&2; exit 1; }
 
 [ "$(id -u)" = "0" ] || die "root olarak calistirilmali."
-
 PYBIN="$(command -v python3 || true)"
 [ -n "$PYBIN" ] || die "python3 bulunamadi."
 
-# --- link adresini belirle ---
-URL="${AGFO_MENU_URL:-}"
-if [ -z "$URL" ]; then
-  CFG="/opt/agfo-ssh-terminal/config/config.json"
-  [ -f "$CFG" ] || die "AGFO SSH Terminal kurulu degil; AGFO_MENU_URL verin."
-  # Terminal kurulumunda alan adi verildiyse (AGFO_SSH_DOMAIN) config'te
-  # public_url hazirdir; sertifika uyarisi cikmasin diye oncelikle o kullanilir.
-  PUB="$("$PYBIN" -c "import json;print(json.load(open('$CFG')).get('public_url') or '')" 2>/dev/null || true)"
-  if [ -n "$PUB" ]; then
-    URL="${PUB%/}/?open=root"
-    say "link config.json'daki public_url'den alindi"
-  else
-    PORT="$("$PYBIN" -c "import json;print(json.load(open('$CFG'))['port'])")"
-    TLS="$("$PYBIN" -c "import json;print('1' if json.load(open('$CFG'))['tls']['enabled'] else '0')")"
-    IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
-    [ -n "$IP" ] || die "sunucu IP'si bulunamadi; AGFO_MENU_URL verin."
-    SCHEME="http"; [ "$TLS" = "1" ] && SCHEME="https"
-    URL="${SCHEME}://${IP}:${PORT}/?open=root"
-    say "UYARI: alan adi tanimli degil, IP kullaniliyor (tarayici SSL uyarisi verebilir)"
+# --- kurulu panellerden link uret ---------------------------------------------
+# $1 kurulum dizini, $2 menu etiketi, $3 ek sorgu parametresi
+build_entry() {
+  local dir="$1" label="$2" extra="${3:-}"
+  local cfg="${dir}/config/config.json"
+  [ -f "$cfg" ] || return 1
+  local pub tok url
+  pub="$("$PYBIN" -c "import json;print(json.load(open('$cfg')).get('public_url') or '')" 2>/dev/null || true)"
+  tok="$("$PYBIN" -c "import json;print(json.load(open('$cfg')).get('auth',{}).get('login_token',''))" 2>/dev/null || true)"
+  if [ -z "$pub" ]; then
+    local port scheme ip
+    port="$("$PYBIN" -c "import json;print(json.load(open('$cfg'))['port'])" 2>/dev/null || true)"
+    [ -n "$port" ] || return 1
+    scheme="$("$PYBIN" -c "import json;print('https' if json.load(open('$cfg'))['tls'].get('enabled') else 'http')" 2>/dev/null || echo https)"
+    ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    pub="${scheme}://${ip}:${port}/"
   fi
-  say "link otomatik belirlendi: $URL"
+  url="${pub%/}/"
+  local qs=""
+  if [ "${AGFO_MENU_NO_TOKEN:-0}" != "1" ] && [ -n "$tok" ]; then
+    qs="t=${tok}"
+  fi
+  if [ -n "$extra" ]; then
+    [ -n "$qs" ] && qs="${qs}&${extra}" || qs="$extra"
+  fi
+  [ -n "$qs" ] && url="${url}?${qs}"
+  printf '%s|%s\n' "$label" "$url"
+}
+
+ENTRIES="${AGFO_MENU_ENTRIES:-}"
+if [ -z "$ENTRIES" ]; then
+  TERM_ENTRY="$(build_entry /opt/agfo-ssh-terminal "AGFO SSH Terminal" "open=root" || true)"
+  FW_ENTRY="$(build_entry /opt/agfo-firewall-ai "AGFO Firewall AI" "" || true)"
+  [ -n "$TERM_ENTRY" ] && ENTRIES="$TERM_ENTRY"
+  if [ -n "$FW_ENTRY" ]; then
+    [ -n "$ENTRIES" ] && ENTRIES="${ENTRIES}
+${FW_ENTRY}" || ENTRIES="$FW_ENTRY"
+  else
+    say "UYARI: /opt/agfo-firewall-ai bulunamadi; Firewall girdisi atlaniyor."
+    say "       Once firewall paketini kurup bu paketi tekrar calistirin."
+  fi
+  [ -n "$ENTRIES" ] || die "Kurulu panel bulunamadi; AGFO_MENU_ENTRIES ile elle verin."
 fi
 
-AGFO_MENU_URL="$URL" "$PYBIN" "${SRC_DIR}/menu_patch.py"
+REMOVE="${AGFO_MENU_REMOVE-AGFO Root Terminal,AGFO SafeGuard}"
 
-# --- CyberPanel'i yeniden baslat ---
+AGFO_MENU_ENTRIES="$ENTRIES" AGFO_MENU_REMOVE="$REMOVE" \
+AGFO_MENU_TARGET="${AGFO_MENU_TARGET:-self}" \
+AGFO_MENU_ROOT="${AGFO_MENU_ROOT:-/usr/local/CyberCP}" \
+AGFO_MENU_DUMP="${AGFO_MENU_DUMP:-0}" \
+"$PYBIN" "${SRC_DIR}/menu_patch.py"
+
+# --- CyberPanel'i tazele -------------------------------------------------------
 if [ "${AGFO_MENU_SKIP_RESTART:-0}" != "1" ]; then
   loaded() { [ "$(systemctl show -p LoadState --value "$1" 2>/dev/null)" = "loaded" ]; }
   DONE=""
@@ -60,16 +89,11 @@ if [ "${AGFO_MENU_SKIP_RESTART:-0}" != "1" ]; then
     say "LiteSpeed nazikce yeniden baslatiliyor (siteler kesilmez)"
     /usr/local/lsws/bin/lswsctrl restart >/dev/null 2>&1 && DONE="lsws (graceful)"
   elif loaded lsws; then
-    say "lsws yeniden baslatiliyor"
     systemctl restart lsws && DONE="lsws"
   fi
-  if [ -n "$DONE" ]; then
-    say "yeniden baslatildi: $DONE"
-  else
-    say "CyberPanel servisi bulunamadi; cogu kurulumda sayfayi Ctrl+F5 ile"
-    say "yenilemek yeterlidir. Gerekirse: systemctl restart lscpd"
-  fi
+  [ -n "$DONE" ] && say "yeniden baslatildi: $DONE" || \
+    say "CyberPanel servisi bulunamadi; sayfayi Ctrl+F5 ile yenileyin."
 fi
 
-say "bitti. CyberPanel sayfasini yenileyin (Ctrl+F5)."
+say "bitti. CyberPanel sayfasini Ctrl+F5 ile yenileyin."
 say "geri almak icin: bash ${SRC_DIR}/restore.sh"

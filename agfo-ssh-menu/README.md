@@ -1,7 +1,37 @@
-# AGFO SSH Terminal — CyberPanel menü girdisi
+# AGFO CyberPanel menü düzenleyici 1.3.0
 
-Bu küçük paket **yalnızca** CyberPanel kenar menüsüne "AGFO SSH Terminal"
-girdisini ekler. Terminalin kendisini kurmaz (onu `agfo-ssh-terminal` paketi kurar).
+CyberPanel kenar menüsündeki AGFO girdilerini düzenler: girdi **ekler**,
+mevcut girdinin adresini **günceller**, istenmeyen girdiyi **siler**.
+
+Varsayılan çalıştırmada:
+
+* **AGFO SSH Terminal** ve **AGFO Firewall AI** girdileri eklenir (kurulu
+  olanlar için), adresleri her panelin `config.json` dosyasındaki `public_url`
+  ve giriş jetonundan otomatik üretilir — tıklayınca şifre sorulmaz.
+* **AGFO Root Terminal** ve **AGFO SafeGuard** girdileri kaldırılır.
+* Linkler aynı sekmede açılır (yeni sekme için `AGFO_MENU_TARGET=blank`).
+
+```
+bash install.sh
+```
+
+Başka bir düzen isterseniz:
+
+```
+AGFO_MENU_REMOVE=""  AGFO_MENU_TARGET=blank bash install.sh        # hiçbir şey silme
+AGFO_MENU_ENTRIES="Panelim|https://adres/" bash install.sh          # girdileri elle ver
+AGFO_MENU_NO_TOKEN=1 bash install.sh                                # jetonsuz link (şifre sorar)
+```
+
+| Değişken | Varsayılan | Açıklama |
+|---|---|---|
+| `AGFO_MENU_ENTRIES` | kurulu panellerden | `Etiket\|https://adres` satırları |
+| `AGFO_MENU_REMOVE` | `AGFO Root Terminal,AGFO SafeGuard` | Silinecek girdiler |
+| `AGFO_MENU_TARGET` | `self` | `blank` = yeni sekme |
+| `AGFO_MENU_NO_TOKEN` | `0` | `1` = linke giriş jetonu koyma |
+| `AGFO_MENU_ANCHOR` | otomatik | Kalıbı kopyalanacak girdi |
+| `AGFO_MENU_ROOT` | `/usr/local/CyberCP` | Şablon dizini |
+| `AGFO_MENU_SKIP_RESTART` | `0` | `1` = CyberPanel'i yeniden başlatma |
 
 ## Nasıl çalışır
 

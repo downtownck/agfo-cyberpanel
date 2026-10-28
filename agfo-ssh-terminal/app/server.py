@@ -40,10 +40,10 @@ import termios
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlparse, parse_qs, unquote
+from urllib.parse import urlparse, parse_qs, unquote, urlencode
 
 APP_NAME = "AGFO SSH Terminal"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.3.0"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
@@ -65,7 +65,9 @@ DEFAULT_CONFIG = {
     "bind": "0.0.0.0",
     "port": 8822,
     "tls": {"enabled": True, "cert": "", "key": ""},
-    "auth": {"password_hash": "", "session_ttl": 43200},
+    "auth": {"password_hash": "", "session_ttl": 43200,
+             # Menu linkiyle sifresiz giris; bos ise devre disi.
+             "login_token": "", "token_login": True},
     "allow_ips": [],
     # Panele disaridan erisilen adres (menu linki bunu kullanir)
     "public_url": "",
@@ -958,6 +960,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.reply(200, {"ok": True, "keys": list_keys()})
             return
         if path in ("/", "/index.html"):
+            if self.try_token_login(urlparse(self.path)):
+                return
             return self.serve_static("index.html")
         if path.startswith("/static/"):
             return self.serve_static(path[len("/static/"):])
@@ -992,6 +996,48 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/password":
             return self.api_password()
         return self.reply(404, {"ok": False, "error": "not_found"})
+
+    # --- otomatik giris jetonu ---
+    def try_token_login(self, parsed):
+        """?t=<jeton> ile sifresiz giris; basarili ise temiz adrese yonlendirir."""
+        query = parse_qs(parsed.query)
+        token = (query.get("t") or [""])[0].strip()
+        if not token:
+            return False
+        if not CFG.get("auth", "token_login", default=True):
+            return False
+        stored = CFG.get("auth", "login_token", default="") or ""
+        ip = self.client_ip()
+        if not stored or GUARD.locked_for(ip) > 0:
+            return False
+        if not hmac.compare_digest(token, stored):
+            GUARD.record_fail(ip)
+            log.warning("gecersiz giris jetonu: %s", ip)
+            return False
+        GUARD.clear(ip)
+        sess_token, csrf = SESSIONS.create(ip)
+        same_site = str(CFG.get("cookie_samesite", default="Strict") or "Strict")
+        if same_site not in ("Strict", "Lax", "None"):
+            same_site = "Strict"
+        secure = self.secure_cookie() or same_site == "None"
+        cookie = "%s=%s; Path=/; HttpOnly; SameSite=%s; Max-Age=%d%s" % (
+            COOKIE_NAME, sess_token, same_site,
+            int(CFG.get("auth", "session_ttl", default=43200) or 43200),
+            "; Secure" if secure else "")
+        # Jetonu adresten dusur, diger parametreleri (ornek: open=root) koru.
+        rest = [(k, v) for k, vals in query.items() if k != "t" for v in vals]
+        target = parsed.path or "/"
+        if rest:
+            target += "?" + urlencode(rest)
+        self.send_response(302)
+        self.send_header("Location", target)
+        self.send_header("Set-Cookie", cookie)
+        self.send_header("Content-Length", "0")
+        self.send_header("Cache-Control", "no-store")
+        self.send_common()
+        self.end_headers()
+        log.info("jeton ile giris: %s", ip)
+        return True
 
     # --- statik ---
     def serve_static(self, rel):
