@@ -1,0 +1,99 @@
+{
+  "id": "nextcloud",
+  "name": "Nextcloud",
+  "badge": "NC",
+  "category": "collab",
+  "tagline": "Kendi sunucunuzda dosya, takvim ve kişiler",
+  "description": "Dropbox benzeri dosya paylaşımı, ofis ve takvim uygulamalarıyla. Kurulum komut satırından otomatik yapılır.",
+  "homepage": "https://nextcloud.com",
+  "license": "AGPL-3.0",
+  "install_mode": "cli",
+  "tags": [
+    "dosya",
+    "bulut",
+    "takvim",
+    "ofis"
+  ],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "mysqli",
+      "gd",
+      "zip",
+      "curl",
+      "intl"
+    ]
+  },
+  "download": {
+    "url": "https://download.nextcloud.com/server/releases/latest.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [
+    {
+      "id": "admin_user",
+      "label": "Yönetici kullanıcı adı",
+      "type": "text",
+      "default": "admin"
+    },
+    {
+      "id": "admin_pass",
+      "label": "Yönetici şifresi (boş bırakılırsa üretilir)",
+      "type": "password",
+      "required": false
+    },
+    {
+      "id": "admin_email",
+      "label": "Yönetici e-postası",
+      "type": "email"
+    }
+  ],
+  "steps": [
+    {
+      "mkdir": {
+        "path": "{site_home}/nextcloud-data",
+        "mode": "0770",
+        "base": "home"
+      }
+    },
+    {
+      "chown": true
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/occ",
+          "maintenance:install",
+          "--database=mysql",
+          "--database-name={db_name}",
+          "--database-user={db_user}",
+          "--database-pass={db_pass}",
+          "--database-host={db_host}",
+          "--admin-user={admin_user}",
+          "--admin-pass={admin_pass}",
+          "--data-dir={site_home}/nextcloud-data"
+        ],
+        "timeout": 1200
+      }
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/occ",
+          "config:system:set",
+          "trusted_domains",
+          "1",
+          "--value={domain}"
+        ],
+        "ignore_errors": true
+      }
+    }
+  ],
+  "finish": {
+    "path": "/",
+    "note": "Nextcloud'a yönetici kullanıcısıyla girin."
+  },
+  "database": true
+}

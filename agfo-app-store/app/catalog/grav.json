@@ -1,0 +1,40 @@
+{
+  "id": "grav",
+  "name": "Grav",
+  "badge": "GR",
+  "category": "cms",
+  "tagline": "Veritabanı istemeyen, dosya tabanlı CMS",
+  "description": "Markdown ile çalışan hızlı bir CMS. Veritabanı gerekmez; kurulum sadece dosyaların açılmasından ibarettir.",
+  "homepage": "https://getgrav.org",
+  "license": "MIT",
+  "install_mode": "cli",
+  "database": false,
+  "tags": [
+    "cms",
+    "markdown",
+    "hızlı"
+  ],
+  "requires": {
+    "php": "8.0",
+    "extensions": [
+      "zip",
+      "gd",
+      "curl"
+    ]
+  },
+  "download": {
+    "url": "https://getgrav.org/download/core/grav-admin/latest",
+    "format": "zip",
+    "strip": 1
+  },
+  "steps": [
+    {
+      "chown": true
+    }
+  ],
+  "finish": {
+    "path": "/",
+    "note": "İlk açılışta yönetici hesabınızı tarayıcıdan oluşturacaksınız."
+  },
+  "fields": []
+}

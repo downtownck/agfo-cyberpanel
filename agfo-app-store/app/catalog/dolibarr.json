@@ -1,0 +1,38 @@
+{
+  "id": "dolibarr",
+  "name": "Dolibarr",
+  "badge": "DB",
+  "category": "crm",
+  "tagline": "KOBİ'ler için ERP ve CRM",
+  "description": "Cari, fatura, stok, teklif ve proje yönetimi. Kurulum sihirbazı tarayıcıdan tamamlanır.",
+  "homepage": "https://www.dolibarr.org",
+  "license": "GPL-3.0",
+  "tags": [
+    "erp",
+    "crm",
+    "fatura",
+    "stok"
+  ],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "mysqli",
+      "gd",
+      "curl",
+      "intl"
+    ]
+  },
+  "download": {
+    "url": "https://github.com/Dolibarr/dolibarr/archive/refs/tags/21.0.0.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "version_note": "Sürüm katalogda sabitlidir.",
+  "finish": {
+    "path": "/install/",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."
+  },
+  "database": true,
+  "install_mode": "web",
+  "fields": []
+}

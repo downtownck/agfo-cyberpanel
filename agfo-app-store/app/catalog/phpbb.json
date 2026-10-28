@@ -1,0 +1,34 @@
+{
+  "id": "phpbb",
+  "name": "phpBB",
+  "badge": "BB",
+  "category": "forum",
+  "tagline": "Klasik, olgun forum yazılımı",
+  "description": "Topluluk forumları için. Kurulum sihirbazı tarayıcıdan tamamlanır.",
+  "homepage": "https://www.phpbb.com",
+  "license": "GPL-2.0",
+  "tags": [
+    "forum",
+    "topluluk"
+  ],
+  "requires": {
+    "php": "8.0",
+    "extensions": [
+      "mysqli",
+      "gd"
+    ]
+  },
+  "download": {
+    "url": "https://download.phpbb.com/pub/release/3.3/3.3.14/phpBB-3.3.14.zip",
+    "format": "zip",
+    "strip": 1
+  },
+  "version_note": "Sürüm katalogda sabitlidir.",
+  "finish": {
+    "path": "/install/app.php/install",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."
+  },
+  "database": true,
+  "install_mode": "web",
+  "fields": []
+}

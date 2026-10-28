@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CyberPanel kenar menusunu duzenler. (1.3.0)
+CyberPanel kenar menusunu duzenler. (1.4.0)
 
 Yapabildikleri:
   * Menu girdisi EKLER  - mevcut bir girdinin kalibini kopyalayarak
@@ -27,7 +27,7 @@ import shutil
 import sys
 import time
 
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 ROOT_DIRS = [d for d in (os.environ.get("AGFO_MENU_ROOT") or "/usr/local/CyberCP").split(",") if d.strip()]
 TARGET = (os.environ.get("AGFO_MENU_TARGET") or "self").strip().lower()
 DUMP = os.environ.get("AGFO_MENU_DUMP", "0") == "1"
@@ -117,6 +117,8 @@ ICON_RULES = [
     ("güvenlik", "fa-shield-alt"),
     ("terminal", "fa-terminal"),
     ("runner", "fa-box"),
+    ("app store", "fa-store"),
+    ("uygulama", "fa-store"),
 ]
 
 

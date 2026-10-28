@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>AGFO App Store</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<div id="login" class="overlay">
+  <form id="login-form" class="card" autocomplete="off">
+    <div class="brand"><span class="brand-mark">AGFO</span><span class="brand-rest">App Store</span></div>
+    <p class="muted">Uygulama kurulum paneli. Panel şifrenizi girin.</p>
+    <label for="login-pass">Panel şifresi</label>
+    <input id="login-pass" type="password" autocomplete="current-password" required>
+    <button type="submit" class="btn primary block">Giriş</button>
+    <div id="login-error" class="error" hidden></div>
+    <div class="login-foot muted" id="login-foot"></div>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="brand small"><span class="brand-mark">AGFO</span><span class="brand-rest">App Store</span></div>
+    <div id="top-badges" class="badges"></div>
+    <div class="spacer"></div>
+    <span id="host-chip" class="host-chip"></span>
+    <button class="btn ghost" id="btn-logout">Çıkış</button>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="store">Mağaza</button>
+    <button class="tab" data-tab="installed">Kurulu uygulamalar</button>
+    <button class="tab" data-tab="jobs">Kurulum geçmişi</button>
+    <button class="tab" data-tab="settings">Ayarlar</button>
+  </nav>
+
+  <main class="content">
+
+    <section class="pane active" id="pane-store">
+      <div class="hero">
+        <h1>Ne kuralım?</h1>
+        <p class="muted">Uygulamalar kendi resmî kaynaklarından indirilir. Site, veritabanı ve SSL CyberPanel üzerinden oluşturulur.</p>
+        <input id="search" type="search" placeholder="Uygulama ara — wordpress, crm, anket, e-ticaret…" autocomplete="off">
+        <div id="cats" class="chips"></div>
+      </div>
+      <div id="grid" class="grid"></div>
+      <div id="grid-empty" class="muted center" hidden>Aramanıza uyan uygulama yok.</div>
+    </section>
+
+    <section class="pane" id="pane-installed">
+      <div class="panel">
+        <h3>Bu sunucuda kurulu uygulamalar</h3>
+        <p class="muted">Yalnızca bu panelden kurulanlar listelenir.</p>
+        <div class="table-wrap">
+          <table class="tbl" id="installed-table">
+            <thead><tr><th>Uygulama</th><th>Adres</th><th>Veritabanı</th><th>PHP</th><th>Kurulum</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane" id="pane-jobs">
+      <div class="panel">
+        <h3>Kurulum geçmişi</h3>
+        <div class="table-wrap">
+          <table class="tbl" id="jobs-table">
+            <thead><tr><th>Durum</th><th>Uygulama</th><th>Hedef</th><th>Zaman</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane" id="pane-settings">
+      <div class="panel">
+        <h3>CyberPanel varsayılanları</h3>
+        <div class="row three">
+          <div><label for="set-php">PHP sürümü</label><input id="set-php" type="text" placeholder="8.2"></div>
+          <div><label for="set-package">Paket</label><input id="set-package" type="text" placeholder="Default"></div>
+          <div><label for="set-owner">Sahip</label><input id="set-owner" type="text" placeholder="admin"></div>
+        </div>
+        <label class="check"><input type="checkbox" id="set-ssl"> Yeni sitelere Let's Encrypt sertifikası çıkar</label>
+        <div class="btn-row"><button class="btn primary" id="btn-save-settings">Kaydet</button></div>
+        <div id="settings-msg" class="error" hidden></div>
+      </div>
+
+      <div class="panel">
+        <h3>Katalog doğrulama</h3>
+        <p class="muted">Her uygulamanın indirme adresini sunucudan yoklar. Bir sürüm yayından kalkmışsa burada görünür.</p>
+        <div class="btn-row">
+          <button class="btn" id="btn-verify">Katalogu doğrula</button>
+          <span id="verify-status" class="muted"></span>
+        </div>
+        <div id="verify-results" class="verify"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Panel şifresi</h3>
+        <div class="row two">
+          <div><label for="pw-current">Mevcut şifre</label><input id="pw-current" type="password"></div>
+          <div><label for="pw-new">Yeni şifre (en az 10 karakter)</label><input id="pw-new" type="password"></div>
+        </div>
+        <div class="btn-row"><button class="btn primary" id="btn-pw">Güncelle</button></div>
+        <div id="pw-msg" class="error" hidden></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- kurulum penceresi -->
+<div id="install-modal" class="overlay" hidden>
+  <div class="card wide">
+    <div class="card-head">
+      <div id="im-title" class="modal-title"></div>
+      <button class="btn ghost icon" data-close="install-modal">&#10005;</button>
+    </div>
+    <div id="im-body">
+      <p id="im-desc" class="muted"></p>
+      <div class="row two">
+        <div><label for="im-domain">Alan adı</label><input id="im-domain" type="text" placeholder="ornek.com" spellcheck="false"></div>
+        <div><label for="im-path">Alt dizin</label><input id="im-path" type="text" value="/" spellcheck="false"></div>
+      </div>
+      <div class="row two">
+        <div><label for="im-email">Site e-postası</label><input id="im-email" type="email" placeholder="ad@alanadi.com"></div>
+        <div><label for="im-php">PHP</label><input id="im-php" type="text"></div>
+      </div>
+      <div id="im-fields"></div>
+      <div id="im-error" class="error" hidden></div>
+      <div class="btn-row">
+        <button class="btn primary" id="im-start">Kur</button>
+        <button class="btn" data-close="install-modal">Vazgeç</button>
+        <span id="im-note" class="muted"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- kurulum ilerlemesi -->
+<div id="job-modal" class="overlay" hidden>
+  <div class="card wide">
+    <div class="card-head">
+      <div id="jm-title" class="modal-title"></div>
+      <button class="btn ghost icon" data-close="job-modal">&#10005;</button>
+    </div>
+    <div id="jm-status" class="pill">hazırlanıyor</div>
+    <pre id="jm-log" class="log"></pre>
+    <div id="jm-result" class="result" hidden></div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+<script src="/static/app.js"></script>
+</body>
+</html>

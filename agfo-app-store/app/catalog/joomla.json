@@ -1,0 +1,37 @@
+{
+  "id": "joomla",
+  "name": "Joomla",
+  "badge": "JM",
+  "category": "cms",
+  "tagline": "Köklü, çok dilli içerik yönetim sistemi",
+  "description": "Çok dilli kurumsal siteler ve portallar için. Kurulum sihirbazı tarayıcıdan tamamlanır.",
+  "homepage": "https://www.joomla.org",
+  "license": "GPL-2.0",
+  "tags": [
+    "cms",
+    "portal",
+    "çok dilli"
+  ],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "mysqli",
+      "gd",
+      "zip",
+      "intl"
+    ]
+  },
+  "download": {
+    "url": "https://github.com/joomla/joomla-cms/releases/download/5.3.2/Joomla_5.3.2-Stable-Full_Package.zip",
+    "format": "zip",
+    "strip": 0
+  },
+  "version_note": "Sürüm katalogda sabitlidir.",
+  "finish": {
+    "path": "/",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."
+  },
+  "database": true,
+  "install_mode": "web",
+  "fields": []
+}

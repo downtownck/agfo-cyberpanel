@@ -1,0 +1,82 @@
+{
+  "id": "mediawiki",
+  "name": "MediaWiki",
+  "badge": "MW",
+  "category": "cms",
+  "tagline": "Vikipedi'nin çalıştığı wiki yazılımı",
+  "description": "Kurumsal bilgi tabanı ve dokümantasyon için. Kurulum komut satırından otomatik yapılır.",
+  "homepage": "https://www.mediawiki.org",
+  "license": "GPL-2.0",
+  "install_mode": "cli",
+  "tags": [
+    "wiki",
+    "dokümantasyon",
+    "bilgi tabanı"
+  ],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "mysqli",
+      "intl",
+      "mbstring",
+      "xml"
+    ]
+  },
+  "download": {
+    "url": "https://releases.wikimedia.org/mediawiki/1.43/mediawiki-1.43.1.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "version_note": "Sürüm katalogda sabitlidir; yeni sürüm çıktığında katalog dosyasından güncellenir.",
+  "fields": [
+    {
+      "id": "admin_user",
+      "label": "Yönetici kullanıcı adı",
+      "type": "text",
+      "default": "admin"
+    },
+    {
+      "id": "admin_pass",
+      "label": "Yönetici şifresi (boş bırakılırsa üretilir)",
+      "type": "password",
+      "required": false
+    },
+    {
+      "id": "admin_email",
+      "label": "Yönetici e-postası",
+      "type": "email"
+    },
+    {
+      "id": "wiki_name",
+      "label": "Wiki adı",
+      "type": "text",
+      "default": "AGFO Wiki"
+    }
+  ],
+  "steps": [
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/maintenance/install.php",
+          "--dbname={db_name}",
+          "--dbuser={db_user}",
+          "--dbpass={db_pass}",
+          "--dbserver={db_host}",
+          "--server={url}",
+          "--scriptpath=",
+          "--lang=tr",
+          "--pass={admin_pass}",
+          "{wiki_name}",
+          "{admin_user}"
+        ],
+        "timeout": 900
+      }
+    }
+  ],
+  "finish": {
+    "path": "/",
+    "note": "LocalSettings.php oluşturuldu; wiki kullanıma hazır."
+  },
+  "database": true
+}

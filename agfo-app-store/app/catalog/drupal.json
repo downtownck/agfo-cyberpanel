@@ -1,0 +1,36 @@
+{
+  "id": "drupal",
+  "name": "Drupal",
+  "badge": "DR",
+  "category": "cms",
+  "tagline": "Kurumsal ölçekte içerik yönetimi",
+  "description": "Karmaşık içerik yapıları ve yetkilendirme gerektiren projeler için. Kurulum sihirbazı tarayıcıdan tamamlanır.",
+  "homepage": "https://www.drupal.org",
+  "license": "GPL-2.0",
+  "tags": [
+    "cms",
+    "kurumsal"
+  ],
+  "requires": {
+    "php": "8.3",
+    "extensions": [
+      "mysqli",
+      "gd",
+      "xml",
+      "curl"
+    ]
+  },
+  "download": {
+    "url": "https://ftp.drupal.org/files/projects/drupal-11.1.0.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "version_note": "Sürüm katalogda sabitlidir.",
+  "finish": {
+    "path": "/core/install.php",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."
+  },
+  "database": true,
+  "install_mode": "web",
+  "fields": []
+}

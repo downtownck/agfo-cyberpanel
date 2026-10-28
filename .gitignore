@@ -8,3 +8,8 @@ config/audit.log
 config/tls/
 config/keys/
 dist/
+
+# agfo-app-store calisma verisi
+config/jobs.json
+config/installs.json
+work/

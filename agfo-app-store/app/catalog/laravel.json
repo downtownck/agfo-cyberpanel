@@ -1,0 +1,36 @@
+{
+  "id": "laravel",
+  "name": "Laravel",
+  "badge": "LV",
+  "category": "framework",
+  "tagline": "PHP uygulama çatısı (iskelet proje)",
+  "description": "Kendi uygulamanızı yazmak için hazır Laravel iskeleti. Composer bağımlılıkları sunucuda kurulur; geliştirme için uygundur.",
+  "homepage": "https://laravel.com",
+  "license": "MIT",
+  "database": true,
+  "tags": [
+    "framework",
+    "geliştirme"
+  ],
+  "requires": {
+    "php": "8.2",
+    "extensions": [
+      "mysqli",
+      "mbstring",
+      "xml",
+      "curl"
+    ]
+  },
+  "download": {
+    "url": "https://github.com/laravel/laravel/archive/refs/tags/v11.0.0.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "version_note": "Sürüm katalogda sabitlidir; composer install sunucuda çalıştırılmalıdır.",
+  "finish": {
+    "path": "/public/",
+    "note": "Belge kökünü /public dizinine çevirmeniz ve composer install çalıştırmanız gerekir."
+  },
+  "install_mode": "web",
+  "fields": []
+}

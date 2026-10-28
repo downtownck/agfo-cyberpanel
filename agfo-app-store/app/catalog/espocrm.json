@@ -1,0 +1,36 @@
+{
+  "id": "espocrm",
+  "name": "EspoCRM",
+  "badge": "ES",
+  "category": "crm",
+  "tagline": "Hafif ve hızlı CRM",
+  "description": "Müşteri, fırsat ve aktivite takibi. Kurulum sihirbazı tarayıcıdan tamamlanır.",
+  "homepage": "https://www.espocrm.com",
+  "license": "AGPL-3.0",
+  "tags": [
+    "crm",
+    "satış"
+  ],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "mysqli",
+      "gd",
+      "zip",
+      "curl"
+    ]
+  },
+  "download": {
+    "url": "https://github.com/espocrm/espocrm/releases/download/8.4.2/EspoCRM-8.4.2.zip",
+    "format": "zip",
+    "strip": 1
+  },
+  "version_note": "Sürüm katalogda sabitlidir.",
+  "finish": {
+    "path": "/",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."
+  },
+  "database": true,
+  "install_mode": "web",
+  "fields": []
+}

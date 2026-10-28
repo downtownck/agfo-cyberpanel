@@ -1,0 +1,10 @@
+[Unit]
+Description=AGFO App Store sertifika yenileme denetimi (gunluk)
+
+[Timer]
+OnCalendar=*-*-* 03:47:00
+RandomizedDelaySec=900
+Persistent=true
+
+[Install]
+WantedBy=timers.target

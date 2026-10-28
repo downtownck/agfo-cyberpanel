@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # =============================================================================
-# AGFO CyberPanel menu duzenleyici (1.3.0)
+# AGFO CyberPanel menu duzenleyici (1.4.0)
 #
 # Varsayilan davranis:
-#   - Menuye "AGFO SSH Terminal" ve "AGFO Firewall AI" girdilerini ekler
+#   - Menuye "AGFO SSH Terminal", "AGFO Firewall AI" ve "AGFO App Store"
+#     girdilerini ekler
 #     (kurulu olanlar icin), adreslerini otomatik giris jetonuyla yazar.
 #   - "AGFO Root Terminal" ve "AGFO SafeGuard" girdilerini kaldirir.
 #   - Linkler ayni sekmede acilir.
@@ -32,6 +33,8 @@ build_entry() {
   local dir="$1" label="$2" extra="${3:-}"
   local cfg="${dir}/config/config.json"
   [ -f "$cfg" ] || return 1
+  # uninstall.sh ayarlari korur ama app/ dizinini siler: o panel artik yok.
+  [ -f "${dir}/app/server.py" ] || return 1
   local pub tok url
   pub="$("$PYBIN" -c "import json;print(json.load(open('$cfg')).get('public_url') or '')" 2>/dev/null || true)"
   tok="$("$PYBIN" -c "import json;print(json.load(open('$cfg')).get('auth',{}).get('login_token',''))" 2>/dev/null || true)"
@@ -56,6 +59,7 @@ build_entry() {
 }
 
 ENTRIES="${AGFO_MENU_ENTRIES:-}"
+DROP_EXTRA=""
 if [ -z "$ENTRIES" ]; then
   TERM_ENTRY="$(build_entry /opt/agfo-ssh-terminal "AGFO SSH Terminal" "open=root" || true)"
   FW_ENTRY="$(build_entry /opt/agfo-firewall-ai "AGFO Firewall AI" "" || true)"
@@ -67,10 +71,23 @@ ${FW_ENTRY}" || ENTRIES="$FW_ENTRY"
     say "UYARI: /opt/agfo-firewall-ai bulunamadi; Firewall girdisi atlaniyor."
     say "       Once firewall paketini kurup bu paketi tekrar calistirin."
   fi
-  [ -n "$ENTRIES" ] || die "Kurulu panel bulunamadi; AGFO_MENU_ENTRIES ile elle verin."
+  STORE_ENTRY="$(build_entry /opt/agfo-app-store "AGFO App Store" "" || true)"
+  if [ -n "$STORE_ENTRY" ]; then
+    [ -n "$ENTRIES" ] && ENTRIES="${ENTRIES}
+${STORE_ENTRY}" || ENTRIES="$STORE_ENTRY"
+  else
+    say "bilgi: /opt/agfo-app-store yok; App Store girdisi varsa kaldirilacak."
+    DROP_EXTRA="AGFO App Store"
+  fi
 fi
 
 REMOVE="${AGFO_MENU_REMOVE-AGFO Root Terminal,AGFO SafeGuard}"
+if [ -n "$DROP_EXTRA" ] && [ -z "${AGFO_MENU_REMOVE+x}" ]; then
+  REMOVE="${REMOVE},${DROP_EXTRA}"
+fi
+if [ -z "$ENTRIES" ] && [ -z "$REMOVE" ]; then
+  die "Kurulu panel bulunamadi; AGFO_MENU_ENTRIES ile elle verin."
+fi
 
 AGFO_MENU_ENTRIES="$ENTRIES" AGFO_MENU_REMOVE="$REMOVE" \
 AGFO_MENU_TARGET="${AGFO_MENU_TARGET:-self}" \

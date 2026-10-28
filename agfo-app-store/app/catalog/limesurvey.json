@@ -1,0 +1,37 @@
+{
+  "id": "limesurvey",
+  "name": "LimeSurvey",
+  "badge": "LS",
+  "category": "tools",
+  "tagline": "Gelişmiş anket ve form sistemi",
+  "description": "Denetim öncesi anketler, müşteri memnuniyeti ve iç değerlendirmeler için. Kurulum sihirbazı tarayıcıdan tamamlanır.",
+  "homepage": "https://www.limesurvey.org",
+  "license": "GPL-2.0",
+  "tags": [
+    "anket",
+    "form",
+    "araştırma"
+  ],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "mysqli",
+      "gd",
+      "zip",
+      "imap"
+    ]
+  },
+  "download": {
+    "url": "https://github.com/LimeSurvey/LimeSurvey/archive/refs/tags/6.6.4+241216.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "version_note": "Sürüm katalogda sabitlidir.",
+  "finish": {
+    "path": "/index.php/installer",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."
+  },
+  "database": true,
+  "install_mode": "web",
+  "fields": []
+}

@@ -1,0 +1,105 @@
+{
+  "id": "wordpress",
+  "name": "WordPress",
+  "badge": "WP",
+  "category": "cms",
+  "tagline": "Dünyanın en yaygın içerik yönetim sistemi",
+  "description": "Bloglar, kurumsal siteler ve WooCommerce ile e-ticaret için. Kurulum tamamen otomatik yapılır; bitince doğrudan yönetim paneline girersiniz.",
+  "homepage": "https://wordpress.org",
+  "license": "GPL-2.0",
+  "install_mode": "cli",
+  "tags": [
+    "blog",
+    "cms",
+    "woocommerce",
+    "seo"
+  ],
+  "requires": {
+    "php": "7.4",
+    "extensions": [
+      "mysqli",
+      "gd",
+      "curl"
+    ]
+  },
+  "download": {
+    "url": "https://wordpress.org/latest.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [
+    {
+      "id": "admin_user",
+      "label": "Yönetici kullanıcı adı",
+      "type": "text",
+      "default": "admin"
+    },
+    {
+      "id": "admin_pass",
+      "label": "Yönetici şifresi (boş bırakılırsa üretilir)",
+      "type": "password",
+      "required": false
+    },
+    {
+      "id": "admin_email",
+      "label": "Yönetici e-postası",
+      "type": "email"
+    }
+  ],
+  "steps": [
+    {
+      "run": {
+        "argv": [
+          "curl",
+          "-fsSL",
+          "-o",
+          "{docroot}/wp-cli.phar",
+          "https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar"
+        ],
+        "timeout": 300
+      }
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/wp-cli.phar",
+          "core",
+          "config",
+          "--path={docroot}",
+          "--dbname={db_name}",
+          "--dbuser={db_user}",
+          "--dbpass={db_pass}",
+          "--dbhost={db_host}",
+          "--skip-check"
+        ]
+      }
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/wp-cli.phar",
+          "core",
+          "install",
+          "--path={docroot}",
+          "--url={url}",
+          "--title={title}",
+          "--admin_user={admin_user}",
+          "--admin_password={admin_pass}",
+          "--admin_email={admin_email}",
+          "--skip-email"
+        ],
+        "timeout": 600
+      }
+    },
+    {
+      "delete": "wp-cli.phar"
+    }
+  ],
+  "finish": {
+    "path": "/wp-admin/",
+    "note": "Yönetim paneline yukarıdaki kullanıcı ve şifreyle girin."
+  },
+  "database": true
+}

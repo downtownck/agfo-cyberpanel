@@ -1,0 +1,743 @@
+# -*- coding: utf-8 -*-
+"""Kurulum motoru.
+
+* Siteyi, veritabanini ve SSL'i CyberPanel'in kendi komut satiriyla olusturur,
+  boylece kurulan her sey panelin kayitlarinda da gorunur.
+* Uygulama tarifindeki adimlari KABUK KULLANMADAN, arguman listesiyle calistirir.
+* Her kurulum bir "is" (job) olarak arka planda yurur; gunlugu canli izlenir.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import secrets
+import shutil
+import string
+import subprocess
+import tarfile
+import threading
+import time
+import urllib.parse
+import urllib.request
+import zipfile
+
+import catalog
+import store
+
+DOMAIN_RE = re.compile(r"^(?!-)[a-z0-9-]{1,63}(?<!-)(\.(?!-)[a-z0-9-]{1,63}(?<!-))+$")
+NAME_RE = re.compile(r"^[a-zA-Z0-9_]{1,32}$")
+USER_RE = re.compile(r"^[a-zA-Z0-9_.-]{1,32}$")
+EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]{1,190}\.[a-zA-Z]{2,20}$")
+SAFE_REL = re.compile(r"^[A-Za-z0-9._/-]{1,200}$")
+
+# Site dizinlerinin kokü. Uretimde /home; testlerde degistirilebilir.
+HOME_BASE = os.environ.get("AGFO_STORE_HOME_BASE", "/home")
+
+RUNNING = {"count": 0}
+_run_lock = threading.Lock()
+
+
+class InstallError(Exception):
+    pass
+
+
+# ---------------------------------------------------------------------------
+# yardimcilar
+# ---------------------------------------------------------------------------
+
+def random_password(length=20):
+    alphabet = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+def php_binary(version=None):
+    version = (version or store.CFG.get("cyberpanel", "default_php", default="8.2") or "8.2")
+    compact = version.replace(".", "")
+    for candidate in ("/usr/local/lsws/lsphp%s/bin/php" % compact,
+                      "/usr/bin/php%s" % version,
+                      "/usr/bin/php"):
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return shutil.which("php") or "/usr/bin/php"
+
+
+def safe_join(base, rel):
+    rel = (rel or "").strip().lstrip("/")
+    if rel and not SAFE_REL.match(rel):
+        raise InstallError("Gecersiz yol: %s" % rel)
+    target = os.path.normpath(os.path.join(base, rel))
+    if not (target == base or target.startswith(base + os.sep)):
+        raise InstallError("Yol kok dizinin disina cikiyor: %s" % rel)
+    return target
+
+
+def substitute(value, variables):
+    """{degisken} yer tutucularini doldurur. Kabuk yorumu yoktur."""
+    if isinstance(value, list):
+        return [substitute(v, variables) for v in value]
+    if isinstance(value, dict):
+        return dict((k, substitute(v, variables)) for k, v in value.items())
+    if not isinstance(value, str):
+        return value
+    def repl(match):
+        key = match.group(1)
+        if key not in variables:
+            raise InstallError("Tarifte bilinmeyen degisken: {%s}" % key)
+        return str(variables[key])
+    return re.sub(r"\{([a-z_][a-z0-9_]*)\}", repl, value)
+
+
+# ---------------------------------------------------------------------------
+# CyberPanel koprusu
+# ---------------------------------------------------------------------------
+
+class CyberPanel(object):
+    def __init__(self, logger):
+        self.log = logger
+
+    def cli(self):
+        configured = store.CFG.get("cyberpanel", "cli", default="") or ""
+        if configured and os.access(configured, os.X_OK):
+            return configured
+        for candidate in ("/usr/local/CyberCP/bin/cyberpanel", "/usr/bin/cyberpanel",
+                          "/usr/local/bin/cyberpanel"):
+            if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                return candidate
+        found = shutil.which("cyberpanel")
+        if not found:
+            raise InstallError("CyberPanel komut satiri (cyberpanel) bulunamadi.")
+        return found
+
+    def run(self, args, timeout=600):
+        argv = [self.cli()] + list(args)
+        self.log("$ " + " ".join(argv))
+        try:
+            proc = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                  timeout=timeout, check=False)
+        except subprocess.TimeoutExpired:
+            raise InstallError("CyberPanel komutu zaman asimina ugradi")
+        out = proc.stdout.decode("utf-8", "replace").strip()
+        for line in out.split("\n")[-40:]:
+            if line.strip():
+                self.log("  " + line.strip())
+        return proc.returncode, out
+
+    @staticmethod
+    def parse_result(output):
+        """CyberPanel CLI her durumda 0 dondurur; sonuc JSON govdesindedir.
+
+        Ciktinin son JSON satiri {"success": 1, "errorMessage": "None"} bicimindedir.
+        Bazi komutlar (createDatabase, issueSSL, deleteWebsite) BASARISIZLIKTA da
+        success=1 basar; bu yuzden hata olcutu errorMessage alanidir.
+        """
+        payload = None
+        for line in reversed((output or "").split("\n")):
+            line = line.strip()
+            if line.startswith("{") and line.endswith("}"):
+                try:
+                    payload = json.loads(line)
+                    break
+                except ValueError:
+                    continue
+        if payload is None:
+            return None, "CyberPanel ciktisi cozumlenemedi"
+        message = str(payload.get("errorMessage", "None"))
+        ok = bool(payload.get("success")) and message.strip().lower() in ("none", "", "null")
+        return ok, (None if ok else message)
+
+    def run_checked(self, args, what, timeout=600):
+        rc, out = self.run(args, timeout=timeout)
+        ok, message = self.parse_result(out)
+        if ok is None:
+            # Komut JSON basmadiysa (bilinmeyen islev adi veya eksik bayrak)
+            raise InstallError("%s: CyberPanel beklenen yaniti vermedi. Cikti: %s"
+                               % (what, (out or "(bos)")[-200:]))
+        if not ok:
+            raise InstallError("%s: %s" % (what, message))
+        return out
+
+    def website_exists(self, domain):
+        return os.path.isdir(HOME_BASE + "/%s" % domain)
+
+    def create_website(self, domain, email, php, package=None, owner=None):
+        if self.website_exists(domain):
+            self.log("site zaten var: %s" % domain)
+            return False
+        package = package or store.CFG.get("cyberpanel", "default_package", default="Default")
+        owner = owner or store.CFG.get("cyberpanel", "default_owner", default="admin")
+        self.run_checked(["createWebsite", "--package", package, "--owner", owner,
+                          "--domainName", domain, "--email", email, "--php", php],
+                         "Site olusturulamadi", timeout=900)
+        if not self.website_exists(domain):
+            raise InstallError("Site dizini olusmadi: %s" % domain)
+        return True
+
+    def create_database(self, domain, db_name, db_user, db_pass):
+        self.run_checked(["createDatabase", "--databaseWebsite", domain,
+                          "--dbName", db_name, "--dbUsername", db_user,
+                          "--dbPassword", db_pass], "Veritabani olusturulamadi")
+        return True
+
+    def issue_ssl(self, domain):
+        """SSL sonucu SSL_RESULT= satirindadir; basarisizlik kurulumu durdurmaz."""
+        rc, out = self.run(["issueSSL", "--domainName", domain], timeout=420)
+        for line in reversed((out or "").split("\n")):
+            if line.strip().startswith("SSL_RESULT="):
+                try:
+                    data = json.loads(line.strip()[len("SSL_RESULT="):])
+                except ValueError:
+                    break
+                if data.get("outcome") == "issued" or data.get("SSL") == 1:
+                    self.log("SSL cikarildi")
+                    return True
+                self.log("UYARI: SSL cikarilamadi (%s). Site HTTP uzerinden calisir."
+                         % (data.get("error_message") or data.get("warning") or "sebep bilinmiyor"))
+                return False
+        ok, message = self.parse_result(out)
+        if ok:
+            return True
+        self.log("UYARI: SSL cikarilamadi (%s)." % (message or "sebep bilinmiyor"))
+        return False
+
+    def site_user(self, domain):
+        """Sitenin Linux kullanicisi (CyberPanel'in urettigi externalApp).
+
+        Alan adindan TAHMIN EDILEMEZ: CyberPanel 'examp4821' gibi bir ad uretir.
+        Dizinin sahibinden okumak en guvenilir yoldur.
+        """
+        import pwd
+        home = HOME_BASE + "/%s" % domain
+        try:
+            return pwd.getpwuid(os.stat(home).st_uid).pw_name
+        except Exception:
+            return None
+
+
+# ---------------------------------------------------------------------------
+# indirme ve arsiv acma
+# ---------------------------------------------------------------------------
+
+def download(url, target, logger, timeout=None):
+    if not url.startswith("https://"):
+        raise InstallError("Yalnizca https adresleri indirilebilir")
+    if not store.CFG.get("network", "allow_downloads", default=True):
+        raise InstallError("Indirme kapali (network.allow_downloads=false)")
+    timeout = timeout or int(store.CFG.get("limits", "download_timeout", default=900) or 900)
+    logger("indiriliyor: %s" % url)
+    req = urllib.request.Request(url, headers={"User-Agent": "AGFO-App-Store/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp, open(target, "wb") as out:
+            total = 0
+            while True:
+                chunk = resp.read(262144)
+                if not chunk:
+                    break
+                out.write(chunk)
+                total += len(chunk)
+                if total > 2 * 1024 * 1024 * 1024:
+                    raise InstallError("Arsiv cok buyuk (2 GB sinirini asti)")
+    except InstallError:
+        raise
+    except Exception as exc:
+        raise InstallError("Indirme basarisiz: %s" % exc)
+    logger("indirildi: %.1f MB" % (os.path.getsize(target) / 1048576.0))
+
+
+def _safe_members_tar(archive, strip):
+    for member in archive.getmembers():
+        name = member.name
+        if name.startswith("/") or ".." in name.split("/"):
+            continue
+        if member.issym() or member.islnk():
+            continue
+        parts = name.split("/")
+        if strip:
+            if len(parts) <= strip:
+                continue
+            name = "/".join(parts[strip:])
+        if not name:
+            continue
+        member.name = name
+        yield member
+
+
+def extract(archive_path, fmt, dest, strip, logger):
+    logger("arsiv aciliyor (%s)" % fmt)
+    if fmt in ("tar.gz", "tgz", "tar.bz2"):
+        mode = "r:bz2" if fmt == "tar.bz2" else "r:gz"
+        with tarfile.open(archive_path, mode) as archive:
+            archive.extractall(dest, members=_safe_members_tar(archive, strip))
+    elif fmt == "zip":
+        with zipfile.ZipFile(archive_path) as archive:
+            for info in archive.infolist():
+                name = info.filename
+                if name.startswith("/") or ".." in name.split("/"):
+                    continue
+                parts = name.split("/")
+                if strip:
+                    if len(parts) <= strip:
+                        continue
+                    name = "/".join(parts[strip:])
+                if not name:
+                    continue
+                target = safe_join(dest, name)
+                if info.is_dir() or name.endswith("/"):
+                    os.makedirs(target, exist_ok=True)
+                    continue
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                with archive.open(info) as src, open(target, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+    else:
+        raise InstallError("Desteklenmeyen arsiv bicimi: %s" % fmt)
+
+
+def _ids(user, group):
+    import grp, pwd
+    try:
+        return pwd.getpwnam(user).pw_uid, grp.getgrnam(group).gr_gid
+    except KeyError:
+        return None, None
+
+
+def chown_tree(path, user, group, logger):
+    uid, gid = _ids(user, group)
+    if uid is None:
+        logger("UYARI: %s:%s bulunamadi, sahiplik degistirilmedi" % (user, group))
+        return
+    for root, dirs, files in os.walk(path):
+        for item in dirs + files:
+            try:
+                os.chown(os.path.join(root, item), uid, gid, follow_symlinks=False)
+            except OSError:
+                pass
+    try:
+        os.chown(path, uid, gid)
+    except OSError:
+        pass
+
+
+def demote_spec(user, home):
+    """Komutu site kullanicisi olarak calistirmak icin preexec ve ortam.
+
+    Internetten inen kurulum betikleri (wp-cli, occ, install.php) root olarak
+    calismamali. Ayrica Nextcloud occ gibi araclar dosya sahibinden baska
+    kullaniciyla calistirilmayi reddeder.
+    """
+    import pwd
+    try:
+        entry = pwd.getpwnam(user)
+    except KeyError:
+        raise InstallError("Site kullanicisi bulunamadi: %s" % user)
+    if entry.pw_uid == 0:
+        raise InstallError("Site kullanicisi root olamaz")
+    uid, gid = entry.pw_uid, entry.pw_gid
+
+    def preexec():
+        os.setsid()
+        os.initgroups(user, gid)
+        os.setgid(gid)
+        os.setuid(uid)
+
+    env = {
+        "PATH": "/usr/local/bin:/usr/bin:/bin",
+        "HOME": home, "USER": user, "LOGNAME": user,
+        "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
+    }
+    return preexec, env, uid, gid
+
+
+def fix_permissions(site_home, docroot, site_user, logger):
+    """CyberPanel'in 'Fix Permissions' islemiyle ayni sirayi uygular.
+
+    Dizinler 0755, dosyalar 0644, sahip site kullanicisi; en sonda belge koku
+    <kullanici>:nogroup ve 0750 yapilir -- OpenLiteSpeed bu duzeni bekler.
+    Hicbir sey herkese yazilabilir birakilmaz; lsphp zaten site kullanicisi
+    olarak calistigi icin buna gerek yoktur.
+    """
+    group = "nogroup"
+    import grp
+    try:
+        grp.getgrnam(group)
+    except KeyError:
+        group = "nobody"
+
+    uid, _ = _ids(site_user, site_user)
+    if uid is None:
+        logger("UYARI: site kullanicisi (%s) bulunamadi; izinler degistirilmedi" % site_user)
+        return
+
+    for root, dirs, files in os.walk(docroot):
+        for name in dirs:
+            try:
+                os.chmod(os.path.join(root, name), 0o755)
+            except OSError:
+                pass
+        for name in files:
+            try:
+                os.chmod(os.path.join(root, name), 0o644)
+            except OSError:
+                pass
+    chown_tree(docroot, site_user, site_user, logger)
+    try:
+        os.chown(site_home, uid, uid)
+    except OSError:
+        pass
+    gid = _ids(site_user, group)[1]
+    if gid is not None:
+        try:
+            os.chown(docroot, uid, gid)
+            os.chmod(docroot, 0o750)
+        except OSError:
+            pass
+    logger("izinler ayarlandi (dizin 0755 / dosya 0644, sahip %s)" % site_user)
+
+
+# ---------------------------------------------------------------------------
+# is (job) yurutucusu
+# ---------------------------------------------------------------------------
+
+class Job(object):
+    def __init__(self, app, params):
+        self.id = secrets.token_hex(8)
+        self.app = app
+        self.params = params
+        self.lines = []
+        self.lock = threading.Lock()
+        self.log_path = os.path.join(store.WORK_DIR, "%s.log" % self.id)
+        # Tarifte acikca verilen dosya izinleri: CyberPanel'in izin duzeltmesi
+        # her dosyayi 0644 yapar; sifre iceren config dosyalari icin bunlari
+        # sonradan geri koyuyoruz.
+        self.explicit_modes = []
+        self.max_lines = int(store.CFG.get("limits", "job_log_lines", default=4000) or 4000)
+
+    def log(self, message):
+        stamp = time.strftime("%H:%M:%S")
+        line = "[%s] %s" % (stamp, message)
+        with self.lock:
+            self.lines.append(line)
+            if len(self.lines) > self.max_lines:
+                del self.lines[: len(self.lines) - self.max_lines]
+            try:
+                if not os.path.isdir(store.WORK_DIR):
+                    os.makedirs(store.WORK_DIR, 0o700)
+                with open(self.log_path, "a", encoding="utf-8") as fh:
+                    fh.write(line + "\n")
+            except Exception:
+                pass
+
+    def tail(self, offset=0):
+        with self.lock:
+            return self.lines[offset:], len(self.lines)
+
+
+JOBS = {}
+
+
+def get_runtime_job(job_id):
+    return JOBS.get(job_id)
+
+
+def validate_params(app, params):
+    """Kullanici girdilerini dogrular ve temiz bir sozluk dondurur."""
+    domain = (params.get("domain") or "").strip().lower().rstrip(".")
+    if not DOMAIN_RE.match(domain):
+        raise InstallError("Gecersiz alan adi: %s" % domain)
+    email = (params.get("email") or "").strip()
+    if not EMAIL_RE.match(email):
+        raise InstallError("Gecersiz e-posta adresi")
+    php = (params.get("php") or store.CFG.get("cyberpanel", "default_php", default="8.2")).strip()
+    if not re.match(r"^\d\.\d$", php):
+        raise InstallError("Gecersiz PHP surumu")
+    path = (params.get("path") or "/").strip() or "/"
+    if path != "/" and not re.match(r"^/[A-Za-z0-9._-]{1,40}$", path):
+        raise InstallError("Gecersiz alt dizin")
+
+    clean = {"domain": domain, "email": email, "php": php, "path": path,
+             "title": (params.get("title") or app["name"])[:120]}
+
+    for field in app.get("fields", []):
+        fid = field["id"]
+        value = (params.get(fid) or field.get("default") or "").strip()
+        if field.get("type") == "password" and not value:
+            value = random_password()
+        if field.get("required", True) and not value:
+            raise InstallError("%s alani gerekli" % field.get("label", fid))
+        if field.get("type") == "email" and value and not EMAIL_RE.match(value):
+            raise InstallError("%s gecerli bir e-posta olmali" % field.get("label", fid))
+        if field.get("type") == "text" and value and not re.match(r"^[^\r\n]{1,120}$", value):
+            raise InstallError("%s gecersiz" % field.get("label", fid))
+        clean[fid] = value
+    return clean
+
+
+def build_variables(app, clean, cp_info):
+    variables = dict(clean)
+    variables.update(cp_info)
+    variables.setdefault("admin_pass", clean.get("admin_pass") or random_password())
+    variables["app_id"] = app["id"]
+    variables["app_name"] = app["name"]
+    variables["php_bin"] = php_binary(clean["php"])
+    variables["site_home"] = HOME_BASE + "/%s" % clean["domain"]
+    variables["now"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    return variables
+
+
+def execute_steps(app, variables, job):
+    docroot = variables["docroot"]
+    for index, raw in enumerate(app.get("steps", []), 1):
+        step = substitute(raw, variables)
+        kind = next(iter(step.keys()))
+        job.log("adim %d/%d: %s" % (index, len(app.get("steps", [])), kind))
+
+        if kind == "mkdir":
+            spec = step["mkdir"]
+            if isinstance(spec, dict) and spec.get("base") == "home":
+                # Moodle/Nextcloud gibi uygulamalar veri dizinini site kokunun
+                # DISINA ister; yalnizca /home/<alanadi> altina izin veriyoruz.
+                home = variables["site_home"]
+                target = os.path.normpath(spec["path"])
+                if not (target == home or target.startswith(home + os.sep)):
+                    raise InstallError("Veri dizini site dizininin disinda: %s" % target)
+                os.makedirs(target, mode=int(spec.get("mode", "0755"), 8), exist_ok=True)
+                _, _, uid, gid = demote_spec(variables["site_user"], home)
+                os.chown(target, uid, gid)
+                job.log("  dizin: %s (sahip %s)" % (target, variables["site_user"]))
+                continue
+            target = safe_join(docroot, spec if isinstance(spec, str) else spec.get("path"))
+            mode = int((spec.get("mode") if isinstance(spec, dict) else None) or "0755", 8)
+            os.makedirs(target, mode=mode, exist_ok=True)
+
+        elif kind == "write":
+            spec = step["write"]
+            target = safe_join(docroot, spec["path"])
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            with open(target, "w", encoding="utf-8") as fh:
+                fh.write(spec.get("content", ""))
+            mode = int(spec.get("mode", "0644"), 8)
+            os.chmod(target, mode)
+            if mode != 0o644:
+                job.explicit_modes.append((target, mode))
+            job.log("  yazildi: %s" % spec["path"])
+
+        elif kind == "delete":
+            spec = step["delete"]
+            target = safe_join(docroot, spec if isinstance(spec, str) else spec.get("path"))
+            if os.path.isdir(target):
+                shutil.rmtree(target, ignore_errors=True)
+            elif os.path.exists(target):
+                os.unlink(target)
+            job.log("  silindi: %s" % (spec if isinstance(spec, str) else spec.get("path")))
+
+        elif kind == "run":
+            spec = step["run"]
+            argv = spec["argv"] if isinstance(spec, dict) else spec
+            if not isinstance(argv, list) or not argv:
+                raise InstallError("Gecersiz 'run' adimi")
+            cwd = safe_join(docroot, (spec.get("cwd") if isinstance(spec, dict) else "") or "")
+            timeout = int((spec.get("timeout") if isinstance(spec, dict) else 0) or 900)
+            as_root = isinstance(spec, dict) and bool(spec.get("as_root"))
+            kwargs = {}
+            if not as_root:
+                preexec, env, _, _ = demote_spec(variables["site_user"], variables["site_home"])
+                # Onceki adimlarin root olarak yazdigi dosyalar komutun
+                # erisebilecegi hale gelsin.
+                chown_tree(docroot, variables["site_user"], variables["site_user"], lambda m: None)
+                kwargs = {"preexec_fn": preexec, "env": env}
+            job.log("  $ " + " ".join(argv[:6]) + (" …" if len(argv) > 6 else "")
+                    + ("  [root]" if as_root else "  [%s]" % variables["site_user"]))
+            try:
+                proc = subprocess.run(argv, cwd=cwd, stdout=subprocess.PIPE, stdin=subprocess.DEVNULL,
+                                      stderr=subprocess.STDOUT, timeout=timeout, check=False,
+                                      **kwargs)
+            except FileNotFoundError:
+                raise InstallError("Komut bulunamadi: %s" % argv[0])
+            except subprocess.TimeoutExpired:
+                raise InstallError("Komut zaman asimina ugradi: %s" % argv[0])
+            out = proc.stdout.decode("utf-8", "replace").strip()
+            for line in out.split("\n")[-30:]:
+                if line.strip():
+                    job.log("    " + line.strip()[:300])
+            if proc.returncode != 0 and not (isinstance(spec, dict) and spec.get("ignore_errors")):
+                raise InstallError("Komut basarisiz (%d): %s" % (proc.returncode, argv[0]))
+
+        elif kind == "chown":
+            fix_permissions(variables["site_home"], docroot, variables["site_user"], job.log)
+
+        else:
+            raise InstallError("Bilinmeyen adim turu: %s" % kind)
+
+
+def run_job(job):
+    app = job.app
+    params = job.params
+    cp = CyberPanel(job.log)
+    created_site = False
+    domain = None
+    try:
+        store.update_job(job.id, status="running", started=int(time.time()))
+        # Parametreler start_install icinde dogrulandi; burada yeniden
+        # dogrulamiyoruz ki uretilen sifreler degismesin.
+        clean = params
+        domain = clean["domain"]
+        job.log("kurulum basliyor: %s -> %s%s" % (app["name"], domain, clean["path"]))
+
+        # 1) site
+        created_site = cp.create_website(domain, clean["email"], clean["php"])
+        docroot_base = HOME_BASE + "/%s/public_html" % domain
+        docroot = docroot_base if clean["path"] == "/" else os.path.join(docroot_base, clean["path"].lstrip("/"))
+        if not os.path.isdir(docroot_base):
+            raise InstallError("Site dizini olusmadi: %s" % docroot_base)
+        os.makedirs(docroot, exist_ok=True)
+        if os.listdir(docroot) and not params.get("overwrite"):
+            leftovers = [n for n in os.listdir(docroot) if n not in ("index.html", ".well-known")]
+            if leftovers:
+                raise InstallError("Hedef dizin bos degil: %s" % docroot)
+        for name in list(os.listdir(docroot)):
+            if name == "index.html":
+                os.unlink(os.path.join(docroot, name))
+
+        # Site kullanicisi CyberPanel tarafindan uretilir (ornek: examp4821);
+        # alan adindan tahmin edilemez, dizin sahibinden okunur.
+        site_user = cp.site_user(domain)
+        if not site_user or site_user == "root":
+            raise InstallError("Sitenin sistem kullanicisi belirlenemedi (%s/%s)" % (HOME_BASE, domain))
+        job.log("site kullanicisi: %s" % site_user)
+        cp_info = {"docroot": docroot, "site_user": site_user,
+                   "url": "https://%s%s" % (domain, "" if clean["path"] == "/" else clean["path"]),
+                   # 'localhost' MySQL'de soket demektir; CyberPanel yetkileri
+                   # 127.0.0.1 ve makine IP'si icin verir, bu yuzden TCP kullaniyoruz.
+                   "db_host": "127.0.0.1", "db_name": "", "db_user": "", "db_pass": ""}
+
+        # 2) veritabani
+        if app.get("database", True):
+            suffix = secrets.token_hex(3)
+            base = re.sub(r"[^a-z0-9]", "", app["id"])[:8] or "app"
+            cp_info["db_name"] = ("%s_%s" % (base, suffix))[:32]
+            cp_info["db_user"] = ("%s_%s" % (base, suffix))[:32]
+            cp_info["db_pass"] = random_password(24)
+            if not (NAME_RE.match(cp_info["db_name"]) and NAME_RE.match(cp_info["db_user"])):
+                raise InstallError("Veritabani adi uretilemedi")
+            cp.create_database(domain, cp_info["db_name"], cp_info["db_user"], cp_info["db_pass"])
+            job.log("veritabani olusturuldu: %s" % cp_info["db_name"])
+
+        variables = build_variables(app, clean, cp_info)
+
+        # 3) dosyalar
+        if not os.path.isdir(store.WORK_DIR):
+            os.makedirs(store.WORK_DIR, 0o700)
+        download_spec = app["download"]
+        archive = os.path.join(store.WORK_DIR, "%s-%s" % (job.id, os.path.basename(
+            urllib.parse.urlparse(download_spec["url"]).path) or "archive"))
+        download(substitute(download_spec["url"], variables), archive, job.log)
+        extract(archive, download_spec.get("format", "tar.gz"), docroot,
+                int(download_spec.get("strip", 0)), job.log)
+        try:
+            os.unlink(archive)
+        except OSError:
+            pass
+
+        # 4) tarif adimlari
+        execute_steps(app, variables, job)
+
+        # 5) sahiplik ve SSL
+        fix_permissions(variables["site_home"], docroot_base, variables["site_user"], job.log)
+        for target, mode in job.explicit_modes:
+            try:
+                os.chmod(target, mode)
+            except OSError:
+                pass
+        if job.explicit_modes:
+            job.log("tarifte belirtilen dosya izinleri geri konuldu (%d dosya)"
+                    % len(job.explicit_modes))
+        if store.CFG.get("cyberpanel", "issue_ssl", default=True) and created_site:
+            cp.issue_ssl(domain)
+
+        finish = app.get("finish", {}) or {}
+        result = {
+            "url": variables["url"] + (finish.get("path", "") or ""),
+            "admin_user": variables.get("admin_user", ""),
+            "admin_pass": variables.get("admin_pass", ""),
+            "db_name": cp_info["db_name"], "db_user": cp_info["db_user"],
+            "db_pass": cp_info["db_pass"],
+            "note": finish.get("note", ""),
+            "install_mode": app.get("install_mode", "web"),
+        }
+        store.add_install({
+            "app": app["id"], "app_name": app["name"], "domain": domain,
+            "path": clean["path"], "url": result["url"], "docroot": docroot,
+            "installed": int(time.time()), "db_name": cp_info["db_name"],
+            "php": clean["php"],
+        })
+        store.update_job(job.id, status="done", finished=int(time.time()), result=result)
+        store.audit("install", {"app": app["id"], "domain": domain, "path": clean["path"]})
+        job.log("KURULUM TAMAM: %s" % result["url"])
+
+    except InstallError as exc:
+        job.log("HATA: %s" % exc)
+        store.update_job(job.id, status="error", finished=int(time.time()), error=str(exc))
+        store.audit("install_failed", {"app": app.get("id"), "domain": domain, "error": str(exc)})
+    except Exception as exc:  # beklenmeyen
+        job.log("BEKLENMEYEN HATA: %s" % exc)
+        store.update_job(job.id, status="error", finished=int(time.time()), error=str(exc))
+    finally:
+        with _run_lock:
+            RUNNING["count"] = max(0, RUNNING["count"] - 1)
+
+
+def start_install(app_id, params):
+    app = catalog.get(app_id)
+    if not app:
+        raise InstallError("Uygulama bulunamadi: %s" % app_id)
+    # Girdiler ise baslamadan ONCE dogrulanir: hatali istek aninda ve anlasilir
+    # bir mesajla reddedilir, bos yere "kurulum basladi" denmez.
+    clean = validate_params(app, params)
+    clean["overwrite"] = bool(params.get("overwrite"))
+    limit = int(store.CFG.get("limits", "max_concurrent_jobs", default=2) or 2)
+    with _run_lock:
+        if RUNNING["count"] >= limit:
+            raise InstallError("Ayni anda en fazla %d kurulum calisabilir." % limit)
+        RUNNING["count"] += 1
+    job = Job(app, clean)
+    JOBS[job.id] = job
+    store.add_job({"id": job.id, "app": app["id"], "app_name": app["name"],
+                   "domain": clean["domain"], "path": clean["path"],
+                   "status": "queued", "created": int(time.time())})
+    thread = threading.Thread(target=run_job, args=(job,), name="install-%s" % job.id, daemon=True)
+    thread.start()
+    return job.id
+
+
+# ---------------------------------------------------------------------------
+# katalog dogrulama
+# ---------------------------------------------------------------------------
+
+def verify_catalog(timeout=20):
+    """Her uygulamanin indirme adresini sunucudan yoklar."""
+    results = []
+    for item in catalog.load():
+        url = item["download"]["url"]
+        entry = {"id": item["id"], "name": item["name"], "url": url,
+                 "ok": False, "status": 0, "size": 0, "error": ""}
+        try:
+            req = urllib.request.Request(url, method="HEAD",
+                                         headers={"User-Agent": "AGFO-App-Store/1.0"})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                entry["status"] = resp.status
+                entry["ok"] = 200 <= resp.status < 400
+                entry["size"] = int(resp.headers.get("Content-Length") or 0)
+        except Exception as exc:
+            # Bazi sunucular HEAD kabul etmez; kucuk bir GET ile tekrar dene.
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "AGFO-App-Store/1.0",
+                                                           "Range": "bytes=0-1023"})
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    entry["status"] = resp.status
+                    entry["ok"] = 200 <= resp.status < 400
+                    entry["size"] = int(resp.headers.get("Content-Range", "0/0").split("/")[-1] or 0)
+            except Exception as exc2:
+                entry["error"] = str(exc2)[:200]
+        results.append(entry)
+    store.audit("catalog_verify", {"ok": sum(1 for r in results if r["ok"]),
+                                   "total": len(results)})
+    return results

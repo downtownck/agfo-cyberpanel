@@ -16,8 +16,9 @@ Ortak tasarım kuralları:
 | Araç | Sürüm | Ne yapar |
 |---|---|---|
 | [agfo-ssh-terminal](agfo-ssh-terminal/) | 1.3.0 | Tarayıcıdan PuTTY tarzı SSH terminali; root kabuğu, sekmeler, kayıtlı oturumlar |
-| [agfo-ssh-menu](agfo-ssh-menu/) | 1.3.0 | CyberPanel kenar menüsünü düzenler: girdi ekler, günceller, siler |
+| [agfo-ssh-menu](agfo-ssh-menu/) | 1.4.0 | CyberPanel kenar menüsünü düzenler: girdi ekler, günceller, siler |
 | [agfo-firewall-ai](agfo-firewall-ai/) | 1.1.0 | CrowdSec üzerine AI destekli güvenlik duvarı paneli; öneri üretir, siz onaylarsınız |
+| [agfo-app-store](agfo-app-store/) | 1.0.0 | Tek tıkla uygulama kurulumu: CyberPanel'de site + SSL + veritabanı açar, 16 uygulama |
 
 ## Hızlı kurulum
 
@@ -30,6 +31,12 @@ bash agfo-ssh-menu/install.sh
 
 # Güvenlik duvarı paneli (8823) — CrowdSec'i de kurar
 AGFO_FW_DOMAIN=alanadiniz.com AGFO_FW_ALLOW_IPS="sabit.ip.adresiniz" bash agfo-firewall-ai/install.sh
+
+# Uygulama mağazası (8824) — alan adını CyberPanel sertifikasından kendisi bulur
+bash agfo-app-store/install.sh
+
+# Yeni paneller kurulduktan sonra menüyü tazele
+bash agfo-ssh-menu/install.sh
 ```
 
 Her aracın kendi klasöründeki `README.md` dosyası tüm ortam değişkenlerini,
@@ -46,8 +53,8 @@ panelin `config.json` dosyasında `auth.token_login: false`.
 
 ## Güvenlik notu
 
-`agfo-ssh-terminal` ve `agfo-firewall-ai` sunucuda **root yetkisiyle** çalışır
-ve panellerine giren kişi sunucuya hâkim olur. İkisinde de:
+`agfo-ssh-terminal`, `agfo-firewall-ai` ve `agfo-app-store` sunucuda **root yetkisiyle**
+çalışır ve panellerine giren kişi sunucuya hâkim olur. Hepsinde:
 
 * PBKDF2-SHA256 ile saklanan panel şifresi, IP başına kaba kuvvet kilidi
 * HttpOnly + SameSite çerez, CSRF başlığı, Origin denetimi, varsayılan HTTPS
@@ -65,6 +72,7 @@ Sürüm numaraları her aracın `VERSION` dosyasında ve `install.sh` başındak
 ```bash
 cat /opt/agfo-ssh-terminal/VERSION
 cat /opt/agfo-firewall-ai/VERSION
+cat /opt/agfo-app-store/VERSION
 ```
 
 Yükseltmek için ilgili klasörü indirip `install.sh`'i yeniden çalıştırmak

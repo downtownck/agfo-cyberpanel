@@ -1,0 +1,35 @@
+{
+  "id": "matomo",
+  "name": "Matomo",
+  "badge": "MT",
+  "category": "analytics",
+  "tagline": "Google Analytics'e açık kaynak alternatif",
+  "description": "Ziyaretçi verisi tamamen sizin sunucunuzda kalır. Kurulum sihirbazı tarayıcıdan tamamlanır.",
+  "homepage": "https://matomo.org",
+  "license": "GPL-3.0",
+  "tags": [
+    "analitik",
+    "istatistik",
+    "gizlilik"
+  ],
+  "requires": {
+    "php": "8.0",
+    "extensions": [
+      "mysqli",
+      "gd",
+      "curl"
+    ]
+  },
+  "download": {
+    "url": "https://builds.matomo.org/matomo.zip",
+    "format": "zip",
+    "strip": 1
+  },
+  "finish": {
+    "path": "/",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."
+  },
+  "database": true,
+  "install_mode": "web",
+  "fields": []
+}
