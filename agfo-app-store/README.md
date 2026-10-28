@@ -1,4 +1,4 @@
-# AGFO App Store 1.0.0
+# AGFO App Store 1.0.1
 
 CyberPanel için tek tıkla uygulama kurulumu. Uygulamayı seçersiniz; mağaza
 CyberPanel üzerinden yeni site (veya alt alan adı) açar, Let's Encrypt SSL
@@ -15,7 +15,7 @@ AGFO Package Runner ile ZIP'i yükleyin; `install.sh` root olarak çalışır.
 Elle:
 
 ```bash
-unzip agfo-app-store-1.0.0.zip && cd agfo-app-store-1.0.0 && bash install.sh
+unzip agfo-app-store-1.0.1.zip && cd agfo-app-store-1.0.1 && bash install.sh
 ```
 
 Kurulum sonunda panel adresi, menü linki ve (ilk kurulumda) panel şifresi

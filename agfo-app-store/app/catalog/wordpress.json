@@ -94,6 +94,32 @@
       }
     },
     {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/wp-cli.phar",
+          "option",
+          "update",
+          "siteurl",
+          "{url}",
+          "--path={docroot}"
+        ]
+      }
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/wp-cli.phar",
+          "option",
+          "update",
+          "home",
+          "{url}",
+          "--path={docroot}"
+        ]
+      }
+    },
+    {
       "delete": "wp-cli.phar"
     }
   ],
