@@ -33,7 +33,8 @@
   <nav class="tabs" id="tabs">
     <button class="tab active" data-tab="store">Mağaza</button>
     <button class="tab" data-tab="installed">Kurulu uygulamalar</button>
-    <button class="tab" data-tab="jobs">Kurulum geçmişi</button>
+    <button class="tab" data-tab="jobs">İşlem geçmişi</button>
+    <button class="tab" data-tab="tools">Sunucu araçları</button>
     <button class="tab" data-tab="settings">Ayarlar</button>
   </nav>
 
@@ -75,6 +76,19 @@
       </div>
     </section>
 
+    <section class="pane" id="pane-tools">
+      <div class="panel">
+        <h3>Runner ile kurulan AGFO araçları</h3>
+        <p class="muted">Bu sunucudaki <code>agfo-*</code> servisleri ve <code>/opt/agfo-*</code> kurulumları. Kaldırma, aracın kendi <code>uninstall.sh</code> betiğini çalıştırır.</p>
+        <div class="table-wrap">
+          <table class="tbl" id="tools-table">
+            <thead><tr><th>Araç</th><th>Sürüm</th><th>Durum</th><th>Port</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <section class="pane" id="pane-settings">
       <div class="panel">
         <h3>CyberPanel varsayılanları</h3>
@@ -88,6 +102,26 @@
         <div id="settings-msg" class="error" hidden></div>
       </div>
 
+      <div class="panel" id="ai-panel">
+        <h3>AI desteği</h3>
+        <p class="muted">Firewall AI'ya girdiğiniz anahtarlar burada da kullanılır. AI yalnızca öneri üretir; hiçbir şeyi kendiliğinden uygulamaz.</p>
+        <div id="ai-keys" class="ai-keys"></div>
+        <div class="row two">
+          <div><label for="ai-provider">Kullanılacak sağlayıcı</label><select id="ai-provider"></select></div>
+          <div><label for="ai-model">Model (boş = sağlayıcının varsayılanı)</label><input id="ai-model" type="text" spellcheck="false"></div>
+        </div>
+        <div class="btn-row"><button class="btn primary" id="btn-ai-save">Kaydet</button><button class="btn" id="btn-ai-test">Anahtarı dene</button><span id="ai-msg" class="muted"></span></div>
+        <details class="ai-add">
+          <summary>Bu panele ayrı anahtar ekle</summary>
+          <div class="row three">
+            <div><label for="ai-new-provider">Sağlayıcı</label><select id="ai-new-provider"></select></div>
+            <div><label for="ai-new-key">API anahtarı</label><input id="ai-new-key" type="password" autocomplete="off"></div>
+            <div><label for="ai-new-model">Model (isteğe bağlı)</label><input id="ai-new-model" type="text" spellcheck="false"></div>
+          </div>
+          <div class="btn-row"><button class="btn" id="btn-ai-add">Anahtarı kaydet</button></div>
+        </details>
+      </div>
+
       <div class="panel">
         <h3>Katalog doğrulama</h3>
         <p class="muted">Her uygulamanın indirme adresini sunucudan yoklar. Bir sürüm yayından kalkmışsa burada görünür.</p>
@@ -96,6 +130,7 @@
           <span id="verify-status" class="muted"></span>
         </div>
         <div id="verify-results" class="verify"></div>
+        <div id="overrides" class="overrides"></div>
       </div>
 
       <div class="panel">
@@ -172,6 +207,35 @@
     <div id="jm-status" class="pill">hazırlanıyor</div>
     <pre id="jm-log" class="log"></pre>
     <div id="jm-result" class="result" hidden></div>
+  </div>
+</div>
+
+<!-- arac gunlugu / genel metin penceresi -->
+<div id="text-modal" class="overlay" hidden>
+  <div class="card wide">
+    <div class="card-head">
+      <div id="tm-title" class="modal-title"></div>
+      <button class="btn ghost icon" data-close="text-modal">&#10005;</button>
+    </div>
+    <pre id="tm-body" class="log"></pre>
+  </div>
+</div>
+
+<!-- arac kaldirma onayi -->
+<div id="tool-rm-modal" class="overlay" hidden>
+  <div class="card">
+    <div class="card-head">
+      <div id="tr-title" class="modal-title"></div>
+      <button class="btn ghost icon" data-close="tool-rm-modal">&#10005;</button>
+    </div>
+    <div class="warnbox">Aracın kendi kaldırma betiği çalıştırılır; servis durur ve dosyaları silinir (ayarları genelde korunur). CyberPanel menüsündeki bağlantısı için menü paketini yeniden çalıştırın.</div>
+    <label for="tr-confirm">Onaylamak için yazın: <b id="tr-slug"></b></label>
+    <input id="tr-confirm" type="text" spellcheck="false" autocomplete="off">
+    <div id="tr-error" class="error" hidden></div>
+    <div class="btn-row">
+      <button class="btn danger" id="tr-start" disabled>Kaldır</button>
+      <button class="btn" data-close="tool-rm-modal">Vazgeç</button>
+    </div>
   </div>
 </div>
 

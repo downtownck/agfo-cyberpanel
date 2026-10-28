@@ -29,10 +29,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import catalog
 import installer
+import ai
+import providers
+import tools
 import store
 
 APP_NAME = "AGFO App Store"
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.0.4"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -171,17 +174,26 @@ class Handler(BaseHTTPRequestHandler):
         return sess
 
     def body_json(self, limit=256 * 1024):
+        # Ayni baglanti (keep-alive) birden cok istek tasir; govde istek basina
+        # BIR kez okunur ve saklanir. Okunmayan govde bir sonraki istegin basina
+        # yapisip onu bozardi.
+        if getattr(self, "_body_cache", None) is not None:
+            return self._body_cache
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             length = 0
-        if length <= 0 or length > limit:
-            return {}
-        try:
-            data = json.loads(self.rfile.read(length).decode("utf-8"))
-            return data if isinstance(data, dict) else {}
-        except Exception:
-            return {}
+        data = {}
+        if length > limit:
+            self.close_connection = True      # okumadan birakiyoruz: baglantiyi kapat
+        elif length > 0:
+            try:
+                parsed = json.loads(self.rfile.read(length).decode("utf-8"))
+                data = parsed if isinstance(parsed, dict) else {}
+            except Exception:
+                data = {}
+        self._body_cache = data
+        return data
 
     def secure_cookie(self):
         return bool(CFG.get("tls", "enabled", default=True))
@@ -275,6 +287,17 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200, {"ok": True, "jobs": store.load_jobs()[::-1][:50]})
             if path == "/api/installs":
                 return self.reply(200, {"ok": True, "installs": store.load_installs()[::-1]})
+            if path == "/api/tools":
+                return self.reply(200, {"ok": True, "tools": tools.discover()})
+            m = re.match(r"^/api/tools/([a-z0-9-]+)/logs$", path)
+            if m:
+                return self.reply(200, {"ok": True, "log": tools.logs(m.group(1),
+                                        (query.get("n") or ["150"])[0])})
+            if path == "/api/ai/status":
+                return self.reply(200, dict(ok=True, **ai.status()))
+            if path == "/api/catalog/proposals":
+                return self.reply(200, {"ok": True, "proposals": store.load_proposals(),
+                                        "overrides": store.load_overrides()})
             if path == "/api/audit":
                 return self.reply(200, {"ok": True, "entries": store.read_audit(300)})
             if path.startswith("/api/job/"):
@@ -290,7 +313,13 @@ class Handler(BaseHTTPRequestHandler):
                 except ValueError:
                     offset = 0
                 runtime = installer.get_runtime_job(job_id)
-                lines, total = (runtime.tail(offset) if runtime else ([], 0))
+                if runtime:
+                    lines, total = runtime.tail(offset)
+                else:
+                    # Servis yeniden basladiysa gunluk diskten okunur. Eski
+                    # surumlerin yazdigi sifreler gosterilirken maskelenir.
+                    every = [installer.redact(l) for l in ai.job_lines(job_id)]
+                    lines, total = every[offset:], len(every)
                 return self.reply(200, {"ok": True, "job": record,
                                         "lines": lines, "total": total})
         except Exception as exc:
@@ -299,6 +328,8 @@ class Handler(BaseHTTPRequestHandler):
         return self.fail(404, "not_found")
 
     def do_POST(self):
+        self._body_cache = None
+        self.body_json()          # govdeyi her durumda tuket (keep-alive guvenligi)
         if not self.ip_allowed():
             return self.fail(403, "ip_not_allowed")
         if not self.same_origin():
@@ -324,11 +355,62 @@ class Handler(BaseHTTPRequestHandler):
                 return self.api_install()
             if path == "/api/uninstall":
                 return self.api_uninstall()
+            if path == "/api/tools/action":
+                d = self.body_json()
+                return self.reply(200, tools.action(d.get("slug", ""), d.get("action", "")))
+            if path == "/api/tools/uninstall":
+                d = self.body_json()
+                return self.reply(200, tools.uninstall(d.get("slug", ""), d.get("confirm", "")))
+            if path == "/api/ai/analyze":
+                d = self.body_json()
+                return self.reply(200, {"ok": True, "analysis": ai.analyze_job(str(d.get("job", "")))})
+            if path == "/api/ai/repair":
+                d = self.body_json()
+                return self.reply(200, {"ok": True, "proposal": ai.propose_download(str(d.get("app", "")))})
+            if path == "/api/ai/apply":
+                d = self.body_json()
+                return self.reply(200, dict(ok=True, **ai.apply_proposal(str(d.get("app", "")))))
+            if path == "/api/ai/discard":
+                d = self.body_json()
+                store.save_proposal(str(d.get("app", "")), None)
+                return self.reply(200, {"ok": True})
+            if path == "/api/catalog/revert":
+                d = self.body_json()
+                removed = store.clear_override(str(d.get("app", "")))
+                catalog.load(force=True)
+                store.audit("catalog_override_revert", {"app": d.get("app")})
+                return self.reply(200, {"ok": True, "removed": bool(removed)})
+            if path == "/api/ai/settings":
+                d = self.body_json()
+                prov = str(d.get("provider", "")).strip()
+                if prov and prov not in providers.PROVIDERS:
+                    return self.fail(400, "bilinmeyen saglayici")
+                CFG.set(("ai", "provider"), prov)
+                CFG.set(("ai", "model"), str(d.get("model", "")).strip()[:120])
+                return self.reply(200, dict(ok=True, **ai.status()))
+            if path == "/api/ai/key":
+                d = self.body_json()
+                prov = str(d.get("provider", "")).strip()
+                if prov not in providers.PROVIDERS:
+                    return self.fail(400, "bilinmeyen saglayici")
+                if d.get("remove"):
+                    store.save_key(prov, remove=True)
+                else:
+                    key = str(d.get("key", "")).strip()
+                    if not key or len(key) > 400:
+                        return self.fail(400, "gecersiz anahtar")
+                    store.save_key(prov, key=key, model=str(d.get("model", "")).strip()[:120] or None)
+                store.audit("ai_key", {"provider": prov, "removed": bool(d.get("remove"))})
+                return self.reply(200, dict(ok=True, **ai.status()))
+            if path == "/api/ai/test":
+                d = self.body_json()
+                ok, msg, models = providers.test_key(str(d.get("provider", "")))
+                return self.reply(200, {"ok": True, "valid": ok, "message": msg, "models": models[:40]})
             if path == "/api/verify":
                 return self.reply(200, {"ok": True, "results": installer.verify_catalog()})
             if path == "/api/settings":
                 return self.api_settings()
-        except installer.InstallError as exc:
+        except (installer.InstallError, ai.AIError, tools.ToolError) as exc:
             return self.fail(400, str(exc))
         except ValueError as exc:
             return self.fail(400, str(exc))

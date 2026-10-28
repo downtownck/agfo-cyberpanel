@@ -15,10 +15,10 @@ Ortak tasarım kuralları:
 
 | Araç | Sürüm | Ne yapar |
 |---|---|---|
-| [agfo-ssh-terminal](agfo-ssh-terminal/) | 1.3.0 | Tarayıcıdan PuTTY tarzı SSH terminali; root kabuğu, sekmeler, kayıtlı oturumlar |
+| [agfo-ssh-terminal](agfo-ssh-terminal/) | 1.3.1 | Tarayıcıdan PuTTY tarzı SSH terminali; root kabuğu, sekmeler, kayıtlı oturumlar |
 | [agfo-ssh-menu](agfo-ssh-menu/) | 1.4.0 | CyberPanel kenar menüsünü düzenler: girdi ekler, günceller, siler |
-| [agfo-firewall-ai](agfo-firewall-ai/) | 1.1.0 | CrowdSec üzerine AI destekli güvenlik duvarı paneli; öneri üretir, siz onaylarsınız |
-| [agfo-app-store](agfo-app-store/) | 1.0.3 | Tek tıkla uygulama kurulumu ve kaldırma: CyberPanel'de site + SSL + veritabanı açar, 12 uygulama |
+| [agfo-firewall-ai](agfo-firewall-ai/) | 1.1.1 | CrowdSec üzerine AI destekli güvenlik duvarı paneli; öneri üretir, siz onaylarsınız |
+| [agfo-app-store](agfo-app-store/) | 1.0.4 | Uygulama kurma ve kaldırma (12 uygulama), AI destekli hata analizi ve katalog onarımı, Runner araçlarını yönetme |
 
 ## Hızlı kurulum
 

@@ -1,4 +1,4 @@
-# AGFO App Store 1.0.3
+# AGFO App Store 1.0.4
 
 CyberPanel için tek tıkla uygulama kurulumu. Uygulamayı seçersiniz; mağaza
 CyberPanel üzerinden yeni site (veya alt alan adı) açar, Let's Encrypt SSL
@@ -15,7 +15,7 @@ AGFO Package Runner ile ZIP'i yükleyin; `install.sh` root olarak çalışır.
 Elle:
 
 ```bash
-unzip agfo-app-store-1.0.3.zip && cd agfo-app-store-1.0.3 && bash install.sh
+unzip agfo-app-store-1.0.4.zip && cd agfo-app-store-1.0.4 && bash install.sh
 ```
 
 Kurulum sonunda panel adresi, menü linki ve (ilk kurulumda) panel şifresi
@@ -83,6 +83,39 @@ bozuksa site ya da veritabanı hiç açılmaz. Sonraki bir adım başarısız ol
 o kurulumun oluşturduğu her şey geri alınır: veritabanı, alt dizin, veri
 klasörleri ve (siteyi bu kurulum açtıysa) site. Önceden var olan site ve
 dosyalara dokunulmaz.
+
+## AI desteği
+
+Firewall AI'ya girdiğiniz sağlayıcı anahtarları (`/opt/agfo-firewall-ai/config/providers.json`)
+burada da kullanılır; yeniden girmeniz gerekmez. *Ayarlar → AI desteği*
+bölümünden hangi sağlayıcının ve modelin kullanılacağını seçebilir, isterseniz
+yalnızca bu panele ait ayrı bir anahtar ekleyebilirsiniz (öncelikli olur).
+Firewall AI ile aynı ilke geçerlidir: **AI yalnızca öneri üretir.**
+
+- **Kurulum hatası analizi:** başarısız bir işin penceresinde *AI ile analiz et*.
+  Günlük ve kurulum bilgisi gönderilir; veritabanı ve yönetici şifreleri
+  gönderilmeden önce maskelenir. Sonuç: özet, kök neden, adımlar, güven düzeyi.
+- **Katalog onarımı:** *Kataloğu doğrula* sonucunda erişilemeyen bir uygulama
+  için *AI'ya sor*. AI yeni bir kaynak önerir, sunucu bu adresi hemen yoklar;
+  erişilemiyorsa *Uygula* düğmesi kapalı kalır. Onaylanan düzeltme
+  `config/catalog-overrides.json` dosyasına yazılır (paket yükseltmesinde
+  kaybolmaz) ve *Geri al* ile kaldırılabilir.
+
+AI'nın önerdiği adresler de yanlış olabilir; yoklama yalnızca adresin
+indirilebildiğini gösterir, doğru paket olduğunu değil. İlk kurulumda dosya
+yine arşiv olarak doğrulanır, değilse hiçbir şey oluşturulmadan durur.
+
+## Sunucu araçları
+
+*Sunucu araçları* sekmesi Runner ile kurulan AGFO araçlarını listeler
+(`agfo-*` systemd servisleri ve `/opt/agfo-*` kurulumları): sürüm, durum, port,
+panelin jetonlu açma bağlantısı. Yapılabilenler: yeniden başlatma,
+durdurma/başlatma, son günlük (journalctl) ve kaldırma. Kaldırma aracın kendi
+`uninstall.sh` betiğini çalıştırır; adını yazarak onaylamanız gerekir ve
+betik root'a ait değilse ya da başkaları yazabiliyorsa çalıştırılmaz. App Store
+kendini durduramaz ve kaldıramaz; kendi yeniden başlatması 3 saniye ertelenir.
+Kaldırılan bir aracın CyberPanel menü girdisi için menü paketini yeniden
+çalıştırın.
 
 ## Kaldırma
 

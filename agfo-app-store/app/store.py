@@ -22,6 +22,12 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 JOBS_PATH = os.path.join(CONFIG_DIR, "jobs.json")
 INSTALLS_PATH = os.path.join(CONFIG_DIR, "installs.json")
 AUDIT_PATH = os.path.join(CONFIG_DIR, "audit.log")
+KEYS_PATH = os.path.join(CONFIG_DIR, "providers.json")
+OVERRIDES_PATH = os.path.join(CONFIG_DIR, "catalog-overrides.json")
+PROPOSALS_PATH = os.path.join(CONFIG_DIR, "catalog-proposals.json")
+# Firewall AI'ya girilmis anahtarlar burada da kullanilir (yeniden girmeye gerek yok).
+SHARED_KEYS_PATHS = [p for p in os.environ.get(
+    "AGFO_STORE_SHARED_KEYS", "/opt/agfo-firewall-ai/config/providers.json").split(",") if p]
 
 DEFAULT_CONFIG = {
     "bind": "0.0.0.0",
@@ -42,6 +48,7 @@ DEFAULT_CONFIG = {
     },
     "limits": {"max_concurrent_jobs": 2, "job_log_lines": 4000, "download_timeout": 900},
     "network": {"allow_downloads": True},
+    "ai": {"provider": "", "model": "", "send_logs": True},
 }
 
 _lock = threading.RLock()
@@ -255,3 +262,103 @@ def read_audit(limit=200):
         return []
     out.reverse()
     return out
+
+
+# --------------------------------------------------------------------------
+# AI saglayici anahtarlari (providers.py bu arayuzu bekler)
+# --------------------------------------------------------------------------
+
+def _shared_keys():
+    merged = {}
+    for path in SHARED_KEYS_PATHS:
+        data = _read_json(path, {})
+        if isinstance(data, dict):
+            for name, entry in data.items():
+                if isinstance(entry, dict) and entry.get("key"):
+                    merged[name] = dict(entry, _source=path)
+    return merged
+
+
+def load_keys():
+    """Firewall AI anahtarlari + bu panele girilenler (bu panelinki onceliklidir)."""
+    keys = _shared_keys()
+    own = _read_json(KEYS_PATH, {})
+    if isinstance(own, dict):
+        for name, entry in own.items():
+            if isinstance(entry, dict) and entry.get("key"):
+                keys[name] = dict(entry, _source="local")
+    return keys
+
+
+def save_key(provider, key=None, model=None, base_url=None, remove=False):
+    with _lock:
+        data = _read_json(KEYS_PATH, {})
+        if remove:
+            data.pop(provider, None)
+        else:
+            entry = data.get(provider, {})
+            if key is not None:
+                entry["key"] = key
+            if model is not None:
+                entry["model"] = model
+            if base_url is not None:
+                entry["base_url"] = base_url
+            entry["updated"] = int(time.time())
+            data[provider] = entry
+        _atomic_write(KEYS_PATH, json.dumps(data, indent=2, ensure_ascii=False))
+        return data
+
+
+def key_summary():
+    """Anahtarlarin kendisini asla dondurmez."""
+    out = {}
+    for name, entry in load_keys().items():
+        raw = entry.get("key") or ""
+        out[name] = {
+            "configured": bool(raw),
+            "hint": ("…" + raw[-4:]) if len(raw) >= 4 else "",
+            "model": entry.get("model") or "",
+            "source": "bu panel" if entry.get("_source") == "local" else "Firewall AI",
+        }
+    return out
+
+
+# --------------------------------------------------------------------------
+# katalog duzeltmeleri (AI onerisi -> onay -> burada saklanir)
+# Paket dosyalarindaki tarifler yukseltmede ezilir; duzeltmeler config'te kalir.
+# --------------------------------------------------------------------------
+
+def load_overrides():
+    data = _read_json(OVERRIDES_PATH, {})
+    return data if isinstance(data, dict) else {}
+
+
+def set_override(app_id, download, previous, note=""):
+    with _lock:
+        data = load_overrides()
+        data[app_id] = {"download": download, "previous": previous,
+                        "applied": int(time.time()), "note": note}
+        _atomic_write(OVERRIDES_PATH, json.dumps(data, indent=2, ensure_ascii=False))
+
+
+def clear_override(app_id):
+    with _lock:
+        data = load_overrides()
+        removed = data.pop(app_id, None)
+        _atomic_write(OVERRIDES_PATH, json.dumps(data, indent=2, ensure_ascii=False))
+        return removed
+
+
+def load_proposals():
+    data = _read_json(PROPOSALS_PATH, {})
+    return data if isinstance(data, dict) else {}
+
+
+def save_proposal(app_id, proposal):
+    with _lock:
+        data = load_proposals()
+        if proposal is None:
+            data.pop(app_id, None)
+        else:
+            data[app_id] = proposal
+        _atomic_write(PROPOSALS_PATH, json.dumps(data, indent=2, ensure_ascii=False))

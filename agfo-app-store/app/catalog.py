@@ -71,8 +71,13 @@ def load(force=False):
                 newest = max(newest, os.path.getmtime(os.path.join(directory, name)))
             except OSError:
                 pass
+    try:
+        newest = max(newest, os.path.getmtime(store.OVERRIDES_PATH))
+    except OSError:
+        pass
     if not force and _cache["items"] is not None and newest <= _cache["mtime"]:
         return _cache["items"]
+    overrides = store.load_overrides()
 
     items, errors = [], []
     for name in sorted(os.listdir(directory)):
@@ -82,7 +87,16 @@ def load(force=False):
         try:
             with open(path, "r", encoding="utf-8") as fh:
                 data = json.load(fh)
-            items.append(_validate(data, path))
+            data = _validate(data, path)
+            fix = overrides.get(data["id"])
+            if isinstance(fix, dict) and isinstance(fix.get("download"), dict):
+                patched = dict(data, download=fix["download"])
+                try:
+                    data = _validate(patched, path)
+                    data["download_override"] = True
+                except ValueError as exc:
+                    errors.append("duzeltme gecersiz (%s): %s" % (data["id"], exc))
+            items.append(data)
         except Exception as exc:
             errors.append(str(exc))
     if errors:
@@ -120,6 +134,7 @@ def public_list():
             "fields": item.get("fields", []),
             "tags": item.get("tags", []),
             "version_note": item.get("version_note", ""),
+            "download_override": bool(item.get("download_override")),
         })
     return out
 

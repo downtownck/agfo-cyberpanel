@@ -178,6 +178,7 @@
           box.style.background = '#2a1717'; box.style.borderColor = '#5a2c2c';
           box.appendChild(el('h4', '', removing ? 'Kaldırma tamamlanamadı' : 'Kurulum tamamlanamadı'));
           box.appendChild(el('div', '', (res.job || {}).error || 'Bilinmeyen hata'));
+          addAnalyzeButton(box, jobId);
         }
       }).catch(function (err) { clearInterval(POLL); toast(err.message, 6000); });
     }, 1200);
@@ -220,6 +221,212 @@
     row.appendChild(open);
     box.appendChild(row);
     box.appendChild(el('div', 'muted', 'Şifreler bu ekranda bir kez gösterilir; kaydedin.'));
+  }
+
+  /* ---------------- AI ---------------- */
+  var AI = { provider: '', keys: {}, catalog: [] };
+  function aiReady() { return !!AI.provider; }
+
+  function addAnalyzeButton(box, jobId) {
+    var row = el('div', 'btn-row'); row.style.marginTop = '10px';
+    var b = el('button', 'btn', aiReady() ? 'AI ile analiz et' : 'AI ile analiz et (anahtar yok)');
+    b.disabled = !aiReady();
+    var out = el('div');
+    b.addEventListener('click', function () {
+      b.disabled = true; b.innerHTML = '<span class="spin"></span> analiz ediliyor…';
+      api('/api/ai/analyze', { job: jobId }).then(function (res) {
+        b.remove(); renderAnalysis(out, res.analysis);
+      }).catch(function (err) { b.disabled = false; b.textContent = 'AI ile analiz et'; toast(err.message, 7000); });
+    });
+    row.appendChild(b); box.appendChild(row); box.appendChild(out);
+  }
+
+  function renderAnalysis(out, a) {
+    out.innerHTML = '';
+    var box = el('div', 'aibox');
+    box.appendChild(el('h5', '', a.ozet || 'Analiz'));
+    if (a.neden) box.appendChild(el('div', '', a.neden));
+    if ((a.adimlar || []).length) {
+      var ol = el('ol');
+      a.adimlar.forEach(function (x) { ol.appendChild(el('li', '', x)); });
+      box.appendChild(ol);
+    }
+    box.appendChild(el('div', 'meta', 'Güven: ' + (a.guven || '?') + ' · ' + a.provider + ' / ' + a.model +
+      ' · AI yanılabilir; adımları uygulamadan önce kontrol edin.'));
+    if (a.katalog_sorunu && a.app) {
+      var b = el('button', 'btn small', 'Bu uygulama için katalog onarımı öner');
+      b.style.marginTop = '8px';
+      b.addEventListener('click', function () { $('job-modal').hidden = true; openTab('settings'); repairApp(a.app); });
+      box.appendChild(b);
+    }
+    out.appendChild(box);
+  }
+
+  function loadAI() {
+    return api('/api/ai/status').then(function (res) {
+      AI.provider = res.provider; AI.keys = res.keys || {}; AI.catalog = res.catalog || [];
+      var wrap = $('ai-keys'); wrap.innerHTML = '';
+      var names = Object.keys(AI.keys);
+      if (!names.length) wrap.appendChild(el('span', 'muted', 'Tanımlı anahtar yok.'));
+      var labels = {}; AI.catalog.forEach(function (c) { labels[c.id] = c.label; });
+      names.forEach(function (n) {
+        var k = AI.keys[n];
+        var pill = el('span', 'pill ok', (labels[n] || n) + ' ' + k.hint + ' · ' + k.source);
+        if (k.source === 'bu panel') {
+          var x = el('button', 'btn ghost small', '✕'); x.title = 'Bu paneldeki anahtarı sil';
+          x.addEventListener('click', function () {
+            api('/api/ai/key', { provider: n, remove: true }).then(loadAI).catch(function (e) { toast(e.message); });
+          });
+          pill.appendChild(x);
+        }
+        wrap.appendChild(pill);
+      });
+      var sel = $('ai-provider'); sel.innerHTML = '';
+      names.forEach(function (n) {
+        var o = el('option', '', labels[n] || n); o.value = n; if (n === res.provider) o.selected = true; sel.appendChild(o);
+      });
+      if (!names.length) { var o = el('option', '', '—'); o.value = ''; sel.appendChild(o); }
+      $('ai-model').value = res.model || '';
+      var nsel = $('ai-new-provider'); nsel.innerHTML = '';
+      AI.catalog.forEach(function (c) { var o = el('option', '', c.label); o.value = c.id; nsel.appendChild(o); });
+    }).catch(function () {});
+  }
+
+  function repairApp(appId) {
+    var box = $('verify-results');
+    var holder = document.getElementById('prop-' + appId);
+    if (!holder) { holder = el('div', 'proposal'); holder.id = 'prop-' + appId; box.insertBefore(holder, box.firstChild); }
+    holder.innerHTML = '<div class="aibox"><span class="spin"></span> AI bir indirme adresi arıyor, ardından sunucudan yoklanacak…</div>';
+    holder.scrollIntoView({ block: 'center' });
+    api('/api/ai/repair', { app: appId }).then(function (res) { renderProposal(holder, res.proposal); })
+      .catch(function (err) { holder.innerHTML = ''; holder.appendChild(el('div', 'warnbox', err.message)); });
+  }
+
+  function renderProposal(holder, p) {
+    holder.innerHTML = '';
+    var box = el('div', 'aibox');
+    box.appendChild(el('h5', '', p.app_name + ' için önerilen kaynak'));
+    var d = p.download || {};
+    var line = el('div'); line.appendChild(el('code', '', d.github ? ('GitHub ' + d.github + ' · ' + d.asset) : d.url));
+    box.appendChild(line);
+    box.appendChild(el('div', 'muted', 'biçim ' + d.format + ' · strip ' + d.strip + (d.only ? ' · yalnız ' + d.only : '') +
+      (p.note ? ' · ' + p.note : '')));
+    if (p.explanation) box.appendChild(el('div', '', p.explanation));
+    var c = p.check || {};
+    box.appendChild(el('div', c.ok ? 'pill ok' : 'pill bad', c.ok ? 'sunucudan yoklandı: erişilebilir' :
+      'sunucudan yoklandı: erişilemiyor (' + (c.error || ('HTTP ' + c.status)) + ')'));
+    var row = el('div', 'btn-row'); row.style.marginTop = '8px';
+    var apply = el('button', 'btn primary small', 'Uygula'); apply.disabled = !c.ok;
+    apply.title = c.ok ? '' : 'Erişilemeyen adres uygulanamaz';
+    apply.addEventListener('click', function () {
+      apply.disabled = true;
+      api('/api/ai/apply', { app: p.app }).then(function (res) {
+        holder.innerHTML = ''; holder.appendChild(el('div', 'pill ok', p.app_name + ': yeni kaynak uygulandı'));
+        loadOverrides(); toast('Uygulandı: ' + res.url);
+      }).catch(function (err) { apply.disabled = false; toast(err.message, 7000); });
+    });
+    var drop = el('button', 'btn small', 'Vazgeç');
+    drop.addEventListener('click', function () { api('/api/ai/discard', { app: p.app }).then(function () { holder.remove(); }); });
+    row.appendChild(apply); row.appendChild(drop); box.appendChild(row);
+    box.appendChild(el('div', 'meta', p.provider + ' / ' + p.model + (p.source_page ? ' · kaynak: ' + p.source_page : '') +
+      ' · Uygulamadan önce adres yeniden yoklanır.'));
+    holder.appendChild(box);
+  }
+
+  function loadOverrides() {
+    api('/api/catalog/proposals').then(function (res) {
+      var box = $('overrides'); box.innerHTML = '';
+      var ids = Object.keys(res.overrides || {});
+      if (!ids.length) return;
+      box.appendChild(el('h5', '', 'Uygulanmış katalog düzeltmeleri'));
+      ids.forEach(function (id) {
+        var o = res.overrides[id], d = o.download || {};
+        var row = el('div', 'vrow');
+        row.appendChild(el('b', '', id));
+        row.appendChild(el('code', '', d.github ? ('GitHub ' + d.github) : d.url));
+        var b = el('button', 'btn small', 'Geri al');
+        b.addEventListener('click', function () {
+          api('/api/catalog/revert', { app: id }).then(loadOverrides).catch(function (e) { toast(e.message); });
+        });
+        row.appendChild(b); box.appendChild(row);
+      });
+    }).catch(function () {});
+  }
+
+  /* ---------------- sunucu araclari ---------------- */
+  var TOOL_RM = null;
+  function loadTools() {
+    var tb = $('tools-table').querySelector('tbody');
+    tb.innerHTML = '<tr><td colspan="5" class="empty"><span class="spin"></span></td></tr>';
+    api('/api/tools').then(function (res) {
+      tb.innerHTML = '';
+      (res.tools || []).forEach(function (t) {
+        var tr = el('tr');
+        var td = el('td'); td.appendChild(el('b', '', t.name));
+        td.appendChild(el('div', 'muted', t.desc || t.slug)); tr.appendChild(td);
+        tr.appendChild(el('td', '', t.version));
+        var st = el('td');
+        var map = { active: ['çalışıyor', 'ok'], inactive: ['durdu', 'bad'], failed: ['hata', 'bad'], activating: ['başlıyor', 'busy'] };
+        var info = t.service ? (map[t.active] || [t.active || '?', '']) : ['servis yok', ''];
+        st.appendChild(el('span', 'pill ' + info[1], info[0]));
+        if (t.enabled && t.enabled !== 'enabled') st.appendChild(el('div', 'muted', t.enabled));
+        tr.appendChild(st);
+        tr.appendChild(el('td', '', t.port ? String(t.port) : '–'));
+        var act = el('td'); var box = el('div', 'tool-actions');
+        if (t.open_url && !t.self) {
+          var a = el('a', 'btn small', 'Aç'); a.href = t.open_url; a.target = '_blank'; a.rel = 'noopener'; box.appendChild(a);
+        }
+        if (t.service) {
+          var r = el('button', 'btn small', 'Yeniden başlat');
+          r.addEventListener('click', function () { toolAction(t, 'restart', r); }); box.appendChild(r);
+          if (!t.self) {
+            var on = t.active === 'active';
+            var ss = el('button', 'btn small', on ? 'Durdur' : 'Başlat');
+            ss.addEventListener('click', function () { toolAction(t, on ? 'stop' : 'start', ss); }); box.appendChild(ss);
+          }
+          var lg = el('button', 'btn small', 'Günlük');
+          lg.addEventListener('click', function () { toolLogs(t); }); box.appendChild(lg);
+        }
+        if (t.uninstall && !t.self) {
+          var rm = el('button', 'btn small danger', 'Kaldır');
+          rm.addEventListener('click', function () { openToolRemove(t); }); box.appendChild(rm);
+        }
+        act.appendChild(box); tr.appendChild(act); tb.appendChild(tr);
+      });
+      if (!(res.tools || []).length) {
+        tb.innerHTML = '<tr><td colspan="5" class="empty">AGFO aracı bulunamadı.</td></tr>';
+      }
+    }).catch(function (err) { tb.innerHTML = ''; toast(err.message, 6000); });
+  }
+  function toolAction(t, what, btn) {
+    btn.disabled = true;
+    api('/api/tools/action', { slug: t.slug, action: what }).then(function (res) {
+      toast(res.message || 'tamam'); setTimeout(loadTools, t.self ? 5000 : 1200);
+    }).catch(function (err) { btn.disabled = false; toast(err.message, 7000); });
+  }
+  function toolLogs(t) {
+    $('tm-title').textContent = t.name + ' · son günlük'; $('tm-body').textContent = 'yükleniyor…';
+    $('text-modal').hidden = false;
+    api('/api/tools/' + t.slug + '/logs?n=200').then(function (res) {
+      var pre = $('tm-body'); pre.textContent = res.log; pre.scrollTop = pre.scrollHeight;
+    }).catch(function (err) { $('tm-body').textContent = err.message; });
+  }
+  function openToolRemove(t) {
+    TOOL_RM = t; $('tr-title').textContent = t.name + ' kaldır'; $('tr-slug').textContent = t.slug;
+    $('tr-confirm').value = ''; $('tr-start').disabled = true; $('tr-error').hidden = true;
+    $('tool-rm-modal').hidden = false; setTimeout(function () { $('tr-confirm').focus(); }, 50);
+  }
+  function startToolRemove() {
+    var t = TOOL_RM; if (!t) return;
+    var b = $('tr-start'); b.disabled = true; b.innerHTML = '<span class="spin"></span>';
+    api('/api/tools/uninstall', { slug: t.slug, confirm: $('tr-confirm').value.trim() }).then(function (res) {
+      $('tool-rm-modal').hidden = true; b.textContent = 'Kaldır';
+      $('tm-title').textContent = t.name + ' kaldırıldı'; $('tm-body').textContent = res.output || '';
+      $('text-modal').hidden = false; loadTools();
+    }).catch(function (err) { b.disabled = false; b.textContent = 'Kaldır'; show('tr-error', err.message); });
+  }
+  function openTab(name) {
+    var tab = document.querySelector('.tab[data-tab="' + name + '"]'); if (tab) tab.click();
   }
 
   /* ---------------- kaldirma ---------------- */
@@ -344,6 +551,12 @@
         var detail = r.ok ? (r.size ? (r.size / 1048576).toFixed(1) + ' MB' : 'erişilebilir')
                           : (r.error || ('HTTP ' + r.status));
         row.appendChild(el('span', 'muted', detail));
+        if (!r.ok) {
+          var ask = el('button', 'btn small', aiReady() ? "AI'ya sor" : "AI'ya sor (anahtar yok)");
+          ask.disabled = !aiReady();
+          ask.addEventListener('click', function () { repairApp(r.id); });
+          row.appendChild(ask);
+        }
         box.appendChild(row);
       });
     }).catch(function (err) {
@@ -371,6 +584,7 @@
       renderCats(); renderGrid();
     });
     loadInstalls();
+    loadAI();
   }
 
   function boot() {
@@ -398,6 +612,27 @@
     $('search').addEventListener('input', function () { FILTER.q = this.value; renderGrid(); });
     $('im-start').addEventListener('click', startInstall);
     $('um-start').addEventListener('click', startUninstall);
+    $('tr-start').addEventListener('click', startToolRemove);
+    $('tr-confirm').addEventListener('input', function () {
+      $('tr-start').disabled = !TOOL_RM || this.value.trim() !== TOOL_RM.slug;
+    });
+    $('btn-ai-save').addEventListener('click', function () {
+      api('/api/ai/settings', { provider: $('ai-provider').value, model: $('ai-model').value })
+        .then(function () { $('ai-msg').textContent = 'Kaydedildi.'; loadAI(); })
+        .catch(function (e) { $('ai-msg').textContent = e.message; });
+    });
+    $('btn-ai-test').addEventListener('click', function () {
+      var p = $('ai-provider').value; if (!p) return;
+      $('ai-msg').innerHTML = '<span class="spin"></span> deneniyor…';
+      api('/api/ai/test', { provider: p }).then(function (res) {
+        $('ai-msg').textContent = (res.valid ? '✓ ' : '✕ ') + res.message;
+      }).catch(function (e) { $('ai-msg').textContent = e.message; });
+    });
+    $('btn-ai-add').addEventListener('click', function () {
+      api('/api/ai/key', { provider: $('ai-new-provider').value, key: $('ai-new-key').value, model: $('ai-new-model').value })
+        .then(function () { $('ai-new-key').value = ''; toast('Anahtar kaydedildi'); loadAI(); })
+        .catch(function (e) { toast(e.message, 6000); });
+    });
     ['um-backup', 'um-db', 'um-site'].forEach(function (id) { $(id).addEventListener('change', updateUninstallWarn); });
     $('um-confirm').addEventListener('input', updateUninstallWarn);
     $('um-confirm').addEventListener('keydown', function (ev) {
@@ -432,6 +667,8 @@
         $('pane-' + tab.dataset.tab).classList.add('active');
         if (tab.dataset.tab === 'jobs') loadJobs();
         if (tab.dataset.tab === 'installed') loadInstalls();
+        if (tab.dataset.tab === 'tools') loadTools();
+        if (tab.dataset.tab === 'settings') { loadAI(); loadOverrides(); }
       });
     });
     document.addEventListener('keydown', function (ev) {

@@ -31,7 +31,7 @@ set -euo pipefail
 
 APP_NAME="AGFO SSH Terminal"
 APP_SLUG="agfo-ssh-terminal"
-APP_VERSION="1.3.0"
+APP_VERSION="1.3.1"
 INSTALL_DIR="/opt/${APP_SLUG}"
 UNIT_PATH="/etc/systemd/system/${APP_SLUG}.service"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

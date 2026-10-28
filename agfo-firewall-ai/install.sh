@@ -23,7 +23,7 @@ set -euo pipefail
 
 APP_NAME="AGFO Firewall AI"
 APP_SLUG="agfo-firewall-ai"
-APP_VERSION="1.1.0"
+APP_VERSION="1.1.1"
 INSTALL_DIR="/opt/${APP_SLUG}"
 UNIT_PATH="/etc/systemd/system/${APP_SLUG}.service"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -15,7 +15,7 @@
     "ofis"
   ],
   "requires": {
-    "php": "8.1",
+    "php": "8.3",
     "extensions": [
       "mysqli",
       "gd",
@@ -25,8 +25,8 @@
     ]
   },
   "download": {
-    "url": "https://download.nextcloud.com/server/releases/latest.tar.gz",
-    "format": "tar.gz",
+    "url": "https://download.nextcloud.com/server/releases/latest.tar.bz2",
+    "format": "tar.bz2",
     "strip": 1
   },
   "fields": [
@@ -96,5 +96,5 @@
     "note": "Nextcloud'a yönetici kullanıcısıyla girin."
   },
   "database": true,
-  "version_note": "Her zaman son sürüm"
+  "version_note": "Her zaman son sürüm · PHP 8.3+"
 }

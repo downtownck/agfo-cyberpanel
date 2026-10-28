@@ -115,6 +115,33 @@ def substitute(value, variables):
 # CyberPanel koprusu
 # ---------------------------------------------------------------------------
 
+SECRET_FLAGS = ("--dbPassword", "--password", "--adminPass", "--dbpass", "--database-pass",
+                "--admin-pass", "--admin_password", "--adminpass", "--pass")
+SECRET_RE = re.compile(r"(--(?:dbPassword|password|adminPass|dbpass|database-pass|admin-pass|"
+                       r"admin_password|adminpass|pass|admin-password)[= ])(\S+)", re.I)
+
+
+def mask_argv(argv):
+    """Gunluge yazilacak komut satirinda sifreleri gizler."""
+    out, hide = [], False
+    for item in argv:
+        if hide:
+            out.append("••••••"); hide = False; continue
+        if item in SECRET_FLAGS:
+            out.append(item); hide = True; continue
+        out.append(SECRET_RE.sub(lambda m: m.group(1) + "••••••", item))
+    return out
+
+
+def redact(text, secrets_=()):
+    """Metinden bilinen sifreleri ve sifre bayraklarini temizler."""
+    text = SECRET_RE.sub(lambda m: m.group(1) + "••••••", text or "")
+    for value in secrets_:
+        if value and len(str(value)) >= 6:
+            text = text.replace(str(value), "••••••")
+    return text
+
+
 class CyberPanel(object):
     def __init__(self, logger):
         self.log = logger
@@ -134,7 +161,7 @@ class CyberPanel(object):
 
     def run(self, args, timeout=600):
         argv = [self.cli()] + list(args)
-        self.log("$ " + " ".join(argv))
+        self.log("$ " + " ".join(mask_argv(argv)))
         try:
             proc = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                   timeout=timeout, check=False)
@@ -699,7 +726,7 @@ def execute_steps(app, variables, job):
                 # erisebilecegi hale gelsin.
                 chown_tree(docroot, variables["site_user"], variables["site_user"], lambda m: None)
                 kwargs = {"preexec_fn": preexec, "env": env}
-            job.log("  $ " + " ".join(argv[:6]) + (" …" if len(argv) > 6 else "")
+            job.log("  $ " + " ".join(mask_argv(argv[:6])) + (" …" if len(argv) > 6 else "")
                     + ("  [root]" if as_root else "  [%s]" % variables["site_user"]))
             try:
                 proc = subprocess.run(argv, cwd=cwd, stdout=subprocess.PIPE, stdin=subprocess.DEVNULL,

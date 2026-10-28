@@ -43,7 +43,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs, unquote, urlencode
 
 APP_NAME = "AGFO SSH Terminal"
-APP_VERSION = "1.3.0"
+APP_VERSION = "1.3.1"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(BASE_DIR)
@@ -864,18 +864,26 @@ class Handler(BaseHTTPRequestHandler):
         return sess
 
     def body_json(self, limit=256 * 1024):
+        # Ayni baglanti (keep-alive) birden cok istek tasir; govde istek basina
+        # BIR kez okunur ve saklanir. Okunmayan govde bir sonraki istegin basina
+        # yapisip onu bozardi (ornek: cikis isteginden sonra 501).
+        if getattr(self, "_body_cache", None) is not None:
+            return self._body_cache
         try:
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             length = 0
-        if length <= 0 or length > limit:
-            return {}
-        raw = self.rfile.read(length)
-        try:
-            data = json.loads(raw.decode("utf-8"))
-            return data if isinstance(data, dict) else {}
-        except Exception:
-            return {}
+        data = {}
+        if length > limit:
+            self.close_connection = True
+        elif length > 0:
+            try:
+                parsed = json.loads(self.rfile.read(length).decode("utf-8"))
+                data = parsed if isinstance(parsed, dict) else {}
+            except Exception:
+                data = {}
+        self._body_cache = data
+        return data
 
     def secure_cookie(self):
         return bool(CFG.get("tls", "enabled", default=True))
@@ -968,6 +976,8 @@ class Handler(BaseHTTPRequestHandler):
         return self.reply(404, {"ok": False, "error": "not_found"})
 
     def do_POST(self):
+        self._body_cache = None
+        self.body_json()          # govdeyi her durumda tuket (keep-alive guvenligi)
         if not self.ip_allowed():
             return self.reply(403, {"ok": False, "error": "ip_not_allowed"})
         if not self.same_origin():
