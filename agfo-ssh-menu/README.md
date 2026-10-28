@@ -1,11 +1,11 @@
-# AGFO CyberPanel menü düzenleyici 1.4.0
+# AGFO CyberPanel menü düzenleyici 1.5.0
 
 CyberPanel kenar menüsündeki AGFO girdilerini düzenler: girdi **ekler**,
 mevcut girdinin adresini **günceller**, istenmeyen girdiyi **siler**.
 
 Varsayılan çalıştırmada:
 
-* **AGFO SSH Terminal**, **AGFO Firewall AI** ve **AGFO App Store** girdileri eklenir (kurulu
+* **AGFO SSH Terminal**, **AGFO Firewall AI**, **AGFO App Store** ve **AGFO File Manager** girdileri eklenir (kurulu
   olanlar için), adresleri her panelin `config.json` dosyasındaki `public_url`
   ve giriş jetonundan otomatik üretilir — tıklayınca şifre sorulmaz.
 * **AGFO Root Terminal** ve **AGFO SafeGuard** girdileri kaldırılır; kaldırılmış

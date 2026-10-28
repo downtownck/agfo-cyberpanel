@@ -7,7 +7,8 @@ Ortak tasarım kuralları:
 
 * **Harici bağımlılık yok.** Hepsi yalnızca Python standart kütüphanesini
   kullanır — `pip install` yok, sanal ortam yok, derleme yok. Sunucudaki
-  Python 3.8+ yeterlidir.
+  Python 3.8+ yeterlidir. (Dosya yöneticisi ayrıca CyberPanel'in zaten kurulu
+  olan lsphp'sini kullanır.)
 * **Kurulum tty istemez**, soru sormaz; tüm ayarlar ortam değişkeniyle verilir.
 * **Yükseltmede ayarlar korunur:** panel şifresi, API anahtarları, kayıtlı
   oturumlar ve sertifikalar aynı betikle yeniden kurulumda yerinde kalır.
@@ -16,9 +17,10 @@ Ortak tasarım kuralları:
 | Araç | Sürüm | Ne yapar |
 |---|---|---|
 | [agfo-ssh-terminal](agfo-ssh-terminal/) | 1.3.1 | Tarayıcıdan PuTTY tarzı SSH terminali; root kabuğu, sekmeler, kayıtlı oturumlar |
-| [agfo-ssh-menu](agfo-ssh-menu/) | 1.4.0 | CyberPanel kenar menüsünü düzenler: girdi ekler, günceller, siler |
+| [agfo-ssh-menu](agfo-ssh-menu/) | 1.5.0 | CyberPanel kenar menüsünü düzenler: girdi ekler, günceller, siler |
 | [agfo-firewall-ai](agfo-firewall-ai/) | 1.1.1 | CrowdSec üzerine AI destekli güvenlik duvarı paneli; öneri üretir, siz onaylarsınız |
-| [agfo-app-store](agfo-app-store/) | 1.1.1 | Uygulama kurma ve kaldırma (63 uygulama, sunucuda sağlık testi), AI destekli hata analizi ve katalog onarımı, Runner araçlarını yönetme |
+| [agfo-app-store](agfo-app-store/) | 1.1.2 | Uygulama kurma ve kaldırma (63 uygulama, sunucuda sağlık testi), AI destekli hata analizi ve katalog onarımı, Runner araçlarını yönetme |
+| [agfo-file-manager](agfo-file-manager/) | 1.0.0 | Root yetkili web dosya yöneticisi (Tiny File Manager uyarlaması): tüm diskte gezinme, kod düzenleyici, sürükle-bırak yükleme, zip, izinler |
 
 ## Hızlı kurulum
 
@@ -34,6 +36,9 @@ AGFO_FW_DOMAIN=alanadiniz.com AGFO_FW_ALLOW_IPS="sabit.ip.adresiniz" bash agfo-f
 
 # Uygulama mağazası (8824) — alan adını CyberPanel sertifikasından kendisi bulur
 bash agfo-app-store/install.sh
+
+# Dosya yöneticisi (8826) — tüm sunucu, root yetkisiyle
+AGFO_FM_ALLOW_IPS="sabit.ip.adresiniz" bash agfo-file-manager/install.sh
 
 # Yeni paneller kurulduktan sonra menüyü tazele
 bash agfo-ssh-menu/install.sh
@@ -53,7 +58,7 @@ panelin `config.json` dosyasında `auth.token_login: false`.
 
 ## Güvenlik notu
 
-`agfo-ssh-terminal`, `agfo-firewall-ai` ve `agfo-app-store` sunucuda **root yetkisiyle**
+`agfo-ssh-terminal`, `agfo-firewall-ai`, `agfo-app-store` ve `agfo-file-manager` sunucuda **root yetkisiyle**
 çalışır ve panellerine giren kişi sunucuya hâkim olur. Hepsinde:
 
 * PBKDF2-SHA256 ile saklanan panel şifresi, IP başına kaba kuvvet kilidi

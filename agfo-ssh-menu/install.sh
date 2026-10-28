@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # =============================================================================
-# AGFO CyberPanel menu duzenleyici (1.4.0)
+# AGFO CyberPanel menu duzenleyici (1.5.0)
 #
 # Varsayilan davranis:
-#   - Menuye "AGFO SSH Terminal", "AGFO Firewall AI" ve "AGFO App Store"
+#   - Menuye "AGFO SSH Terminal", "AGFO Firewall AI", "AGFO App Store" ve "AGFO File Manager"
 #     girdilerini ekler
 #     (kurulu olanlar icin), adreslerini otomatik giris jetonuyla yazar.
 #   - "AGFO Root Terminal" ve "AGFO SafeGuard" girdilerini kaldirir.
@@ -71,14 +71,17 @@ ${FW_ENTRY}" || ENTRIES="$FW_ENTRY"
     say "UYARI: /opt/agfo-firewall-ai bulunamadi; Firewall girdisi atlaniyor."
     say "       Once firewall paketini kurup bu paketi tekrar calistirin."
   fi
-  STORE_ENTRY="$(build_entry /opt/agfo-app-store "AGFO App Store" "" || true)"
-  if [ -n "$STORE_ENTRY" ]; then
-    [ -n "$ENTRIES" ] && ENTRIES="${ENTRIES}
-${STORE_ENTRY}" || ENTRIES="$STORE_ENTRY"
-  else
-    say "bilgi: /opt/agfo-app-store yok; App Store girdisi varsa kaldirilacak."
-    DROP_EXTRA="AGFO App Store"
-  fi
+  for spec in "agfo-app-store|AGFO App Store" "agfo-file-manager|AGFO File Manager"; do
+    slug="${spec%%|*}"; label="${spec#*|}"
+    ENTRY="$(build_entry "/opt/${slug}" "$label" "" || true)"
+    if [ -n "$ENTRY" ]; then
+      [ -n "$ENTRIES" ] && ENTRIES="${ENTRIES}
+${ENTRY}" || ENTRIES="$ENTRY"
+    else
+      say "bilgi: /opt/${slug} yok; '${label}' girdisi varsa kaldirilacak."
+      [ -n "$DROP_EXTRA" ] && DROP_EXTRA="${DROP_EXTRA},${label}" || DROP_EXTRA="$label"
+    fi
+  done
 fi
 
 REMOVE="${AGFO_MENU_REMOVE-AGFO Root Terminal,AGFO SafeGuard}"

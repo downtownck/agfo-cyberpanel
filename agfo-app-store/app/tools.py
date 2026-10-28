@@ -26,6 +26,7 @@ KNOWN = {
     "agfo-ssh-terminal": {"name": "AGFO SSH Terminal", "desc": "Tarayıcıdan root terminali"},
     "agfo-firewall-ai": {"name": "AGFO Firewall AI", "desc": "CrowdSec + AI öneri paneli"},
     "agfo-app-store": {"name": "AGFO App Store", "desc": "Bu panel"},
+    "agfo-file-manager": {"name": "AGFO File Manager", "desc": "Root yetkili web dosya yöneticisi"},
 }
 
 
@@ -53,7 +54,7 @@ def _units():
             unit = line.split()[0] if line.split() else ""
             if unit.endswith(".service"):
                 slug = unit[:-len(".service")]
-                if SLUG_RE.match(slug) and not slug.endswith("-certwatch"):
+                if SLUG_RE.match(slug) and not slug.endswith(("-certwatch", "-backend")):
                     names.add(slug)
     return names
 

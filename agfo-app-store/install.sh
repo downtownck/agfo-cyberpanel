@@ -22,7 +22,7 @@ set -euo pipefail
 
 APP_NAME="AGFO App Store"
 APP_SLUG="agfo-app-store"
-APP_VERSION="1.1.1"
+APP_VERSION="1.1.2"
 INSTALL_DIR="/opt/${APP_SLUG}"
 UNIT_PATH="/etc/systemd/system/${APP_SLUG}.service"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -275,7 +275,7 @@ echo " ${APP_NAME} ${APP_VERSION} kuruldu (${N_APPS} uygulama)"
 echo "============================================================"
 echo " Panel      : ${PUBLIC_URL}"
 echo " Menu linki : ${PUBLIC_URL}?t=${LOGIN_TOKEN}"
-echo "              (menu paketi 1.4.0+ bu linki kendisi ekler)"
+echo "              (menu paketi 1.5.0+ bu linki kendisi ekler)"
 if [ -n "$GEN_PASSWORD" ]; then
 echo " Panel sifre: ${GEN_PASSWORD}"
 echo " ! Bu sifreyi simdi kaydedin; bir daha gosterilmez."

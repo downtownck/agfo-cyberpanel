@@ -34,4 +34,4 @@ else
   say "tamamen silmek icin: AGFO_STORE_PURGE=1 bash $0"
 fi
 say "kurdugunuz siteler yerinde duruyor; onlari CyberPanel'den yonetin."
-say "menu girdisini kaldirmak icin agfo-ssh-menu paketini (1.4.0+) yeniden calistirin."
+say "menu girdisini kaldirmak icin agfo-ssh-menu paketini (1.5.0+) yeniden calistirin."

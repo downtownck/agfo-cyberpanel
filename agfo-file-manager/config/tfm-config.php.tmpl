@@ -1,0 +1,47 @@
+<?php
+// AGFO File Manager - Tiny File Manager ayarlari (install.sh uretir; elle duzenlemeyin).
+//
+// Bu dosya TFM'in en basinda yuklenir. Istek AGFO on panelinden gelmiyorsa
+// (gizli anahtar yoksa) hicbir sey yapilmadan reddedilir: sunucudaki baska
+// kullanicilar 127.0.0.1 uzerinden root dosya yoneticisine ulasamaz.
+$__agfo_key = isset($_SERVER['HTTP_X_AGFO_FM_KEY']) ? (string)$_SERVER['HTTP_X_AGFO_FM_KEY'] : '';
+if (!hash_equals('@BACKEND_KEY@', $__agfo_key)) {
+    http_response_code(403);
+    header('Content-Type: text/plain');
+    exit('forbidden');
+}
+unset($__agfo_key);
+
+// Kimlik dogrulamayi on panel yapar.
+$use_auth = false;
+$auth_users = array();
+$readonly_users = array();
+$global_readonly = false;
+
+// Tum sunucu (root).
+$root_path = '/';
+$root_url = '';
+
+$default_timezone = '@TIMEZONE@';
+$datetime_format = 'd.m.Y H:i';
+$path_display_mode = 'full';
+$sticky_navbar = true;
+
+// Belgeler disariya (Google/Microsoft goruntuleyicilerine) gonderilmez.
+$online_viewer = 'false';
+
+$use_highlightjs = true;
+$highlightjs_style = 'ir-black';
+$edit_files = true;
+$ace_theme = 'monokai';
+
+// Parcali yukleme: 2 MB parcalar, toplam 10 GB'a kadar.
+$max_upload_size_bytes = 10737418240;
+$upload_chunk_size_bytes = 2000000;
+
+$allowed_file_extensions = '';
+$allowed_upload_extensions = '';
+$exclude_items = array();
+
+// IP kisitini on panel yapar.
+$ip_ruleset = 'OFF';

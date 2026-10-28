@@ -1,0 +1,22 @@
+[Unit]
+Description=AGFO File Manager - Tiny File Manager arka ucu (yalniz 127.0.0.1)
+After=network.target
+PartOf=agfo-file-manager.service
+
+[Service]
+Type=simple
+# Tum sunucuyu yonetebilmesi icin root. Yalnizca 127.0.0.1'i dinler ve on panelin
+# gizli anahtari olmadan istek kabul etmez (bkz. www/config.php).
+User=root
+Group=root
+WorkingDirectory=@INSTALL_DIR@/www
+Environment=PHP_CLI_SERVER_WORKERS=4
+ExecStart=@PHPBIN@ -d session.save_path=@INSTALL_DIR@/sessions -d session.gc_maxlifetime=43200 -d upload_max_filesize=64M -d post_max_size=64M -d memory_limit=512M -d max_execution_time=0 -d max_input_vars=10000 -d display_errors=0 -d log_errors=1 -d error_log=@INSTALL_DIR@/logs/php-error.log -d date.timezone=@TIMEZONE@ -S 127.0.0.1:@BACKEND_PORT@ -t @INSTALL_DIR@/www
+Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agfo-file-manager-backend
+
+[Install]
+WantedBy=multi-user.target
