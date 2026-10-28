@@ -144,3 +144,11 @@ label { display: block; margin-bottom: 4px; color: var(--fg-dim); font-size: 12p
   border-top-color: var(--accent); border-radius: 50%; animation: sp .8s linear infinite; vertical-align: -2px; }
 @keyframes sp { to { transform: rotate(360deg); } }
 @media (max-width: 760px) { .row.two, .row.three { flex-direction: column; } }
+
+.btn.danger { background: #7a2323; border-color: #a33a3a; color: #fff; }
+.btn.danger:hover:not(:disabled) { background: #922b2b; }
+.btn.danger:disabled { opacity: .45; cursor: not-allowed; }
+.warnbox { margin: 6px 0 12px; padding: 10px 12px; border-radius: 8px; font-size: 12.5px;
+  background: #2a1717; border: 1px solid #5a2c2c; color: #ffd0d0; }
+.warnbox.soft { background: #2a2414; border-color: #5a4a22; color: #ffe7b0; }
+.small-note { font-size: 12.5px; margin-bottom: 10px; }

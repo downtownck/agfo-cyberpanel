@@ -146,12 +146,13 @@
   }
 
   /* ---------------- iş izleme ---------------- */
-  function watchJob(jobId, title) {
+  function watchJob(jobId, title, kind) {
+    var removing = kind === 'uninstall';
     $('jm-title').textContent = title || 'Kurulum';
     $('jm-log').textContent = '';
     $('jm-result').hidden = true;
     $('jm-result').innerHTML = '';
-    $('jm-status').textContent = 'kuruluyor'; $('jm-status').className = 'pill busy';
+    $('jm-status').textContent = removing ? 'kaldırılıyor' : 'kuruluyor'; $('jm-status').className = 'pill busy';
     $('job-modal').hidden = false;
     var offset = 0;
     clearInterval(POLL);
@@ -167,14 +168,15 @@
         if (st === 'done') {
           clearInterval(POLL);
           $('jm-status').textContent = 'tamamlandı'; $('jm-status').className = 'pill ok';
-          renderResult(res.job.result || {});
+          if (removing || (res.job.result || {}).kind === 'uninstall') renderUninstallResult(res.job.result || {});
+          else renderResult(res.job.result || {});
           loadInstalls();
         } else if (st === 'error') {
           clearInterval(POLL);
           $('jm-status').textContent = 'hata'; $('jm-status').className = 'pill bad';
           var box = $('jm-result'); box.hidden = false;
           box.style.background = '#2a1717'; box.style.borderColor = '#5a2c2c';
-          box.appendChild(el('h4', '', 'Kurulum tamamlanamadı'));
+          box.appendChild(el('h4', '', removing ? 'Kaldırma tamamlanamadı' : 'Kurulum tamamlanamadı'));
           box.appendChild(el('div', '', (res.job || {}).error || 'Bilinmeyen hata'));
         }
       }).catch(function (err) { clearInterval(POLL); toast(err.message, 6000); });
@@ -220,6 +222,64 @@
     box.appendChild(el('div', 'muted', 'Şifreler bu ekranda bir kez gösterilir; kaydedin.'));
   }
 
+  /* ---------------- kaldirma ---------------- */
+  var UNINSTALL = null;
+  function updateUninstallWarn() {
+    var i = UNINSTALL; if (!i) return;
+    var parts = [];
+    var where = i.domain + ((i.path && i.path !== '/') ? i.path : '');
+    if ($('um-site').checked) parts.push('CyberPanel sitesi ' + i.domain + ' tamamen silinecek.');
+    else parts.push(where + ' altındaki tüm dosyalar kaldırılacak.');
+    if (i.db_name && $('um-db').checked) parts.push('Veritabanı ' + i.db_name + ' silinecek.');
+    parts.push($('um-backup').checked
+      ? 'Önce yedek alınır; geri dönmek mümkündür.'
+      : 'YEDEK ALINMAYACAK: bu işlem geri alınamaz.');
+    var w = $('um-warn'); w.textContent = parts.join(' ');
+    w.className = 'warnbox' + ($('um-backup').checked ? ' soft' : '');
+    $('um-start').disabled = ($('um-confirm').value.trim().toLowerCase() !== i.domain);
+  }
+  function openUninstall(i) {
+    UNINSTALL = i;
+    $('um-title').textContent = (i.app_name || i.app) + ' kaldır';
+    $('um-desc').textContent = i.url || i.domain;
+    $('um-domain').textContent = i.domain;
+    $('um-db-name').textContent = i.db_name || '';
+    $('um-db-row').hidden = !i.db_name; $('um-db').checked = !!i.db_name;
+    var canSite = !!i.created_site && (!i.path || i.path === '/');
+    $('um-site-row').hidden = !canSite; $('um-site').checked = false;
+    $('um-site-note').hidden = canSite || !(!i.path || i.path === '/');
+    $('um-backup').checked = true;
+    $('um-confirm').value = '';
+    $('um-error').hidden = true;
+    $('uninstall-modal').hidden = false;
+    updateUninstallWarn();
+    setTimeout(function () { $('um-confirm').focus(); }, 50);
+  }
+  function startUninstall() {
+    var i = UNINSTALL; if (!i) return;
+    var btn = $('um-start'); btn.disabled = true;
+    api('/api/uninstall', {
+      domain: i.domain, path: i.path || '/', confirm: $('um-confirm').value.trim(),
+      drop_db: !!i.db_name && $('um-db').checked, backup: $('um-backup').checked,
+      delete_site: !$('um-site-row').hidden && $('um-site').checked
+    }).then(function (res) {
+      $('uninstall-modal').hidden = true;
+      watchJob(res.job, (i.app_name || i.app) + ' kaldırılıyor → ' + i.domain, 'uninstall');
+    }).catch(function (err) { btn.disabled = false; show('um-error', err.message); });
+  }
+  function renderUninstallResult(r) {
+    var box = $('jm-result'); box.hidden = false; box.innerHTML = '';
+    box.appendChild(el('h4', '', r.site_deleted ? 'Uygulama ve site kaldırıldı' : 'Uygulama kaldırıldı'));
+    var grid = el('div', 'kv');
+    kv(grid, 'Alan adı', r.domain + ((r.path && r.path !== '/') ? r.path : ''), false);
+    if (r.backup) kv(grid, 'Yedek', r.backup, true);
+    box.appendChild(grid);
+    (r.warnings || []).forEach(function (w) { box.appendChild(el('div', 'warnbox', w)); });
+    box.appendChild(el('div', 'muted', r.backup
+      ? 'Yedek dizininde dosyalar (files/) ve veritabanı dökümü (.sql) bulunur. Gerekmiyorsa sunucuda silebilirsiniz.'
+      : 'Yedek alınmadı.'));
+  }
+
   /* ---------------- listeler ---------------- */
   function loadInstalls() {
     api('/api/installs').then(function (res) {
@@ -233,11 +293,15 @@
         tr.appendChild(el('td', '', i.db_name || '–'));
         tr.appendChild(el('td', '', i.php || '–'));
         tr.appendChild(el('td', '', new Date((i.installed || 0) * 1000).toLocaleString('tr-TR')));
+        var act = el('td');
+        var rm = el('button', 'btn small danger', 'Kaldır');
+        rm.addEventListener('click', function () { openUninstall(i); });
+        act.appendChild(rm); tr.appendChild(act);
         tb.appendChild(tr);
       });
       if (!(res.installs || []).length) {
         var tr = el('tr'); var td = el('td', 'empty', 'Henüz uygulama kurulmadı.');
-        td.colSpan = 5; tr.appendChild(td); tb.appendChild(tr);
+        td.colSpan = 6; tr.appendChild(td); tb.appendChild(tr);
       }
     }).catch(function () {});
   }
@@ -250,12 +314,12 @@
         var map = { done: ['tamam', 'ok'], error: ['hata', 'bad'], running: ['sürüyor', 'busy'], queued: ['sırada', ''] };
         var info = map[j.status] || [j.status, ''];
         var td0 = el('td'); td0.appendChild(el('span', 'pill ' + info[1], info[0])); tr.appendChild(td0);
-        tr.appendChild(el('td', '', j.app_name || j.app));
+        tr.appendChild(el('td', '', (j.kind === 'uninstall' ? 'Kaldırma · ' : '') + (j.app_name || j.app)));
         tr.appendChild(el('td', '', (j.domain || '') + (j.path && j.path !== '/' ? j.path : '')));
         tr.appendChild(el('td', '', new Date((j.created || 0) * 1000).toLocaleString('tr-TR')));
         var tda = el('td');
         var btn = el('button', 'btn small', 'günlük');
-        btn.addEventListener('click', function () { watchJob(j.id, (j.app_name || '') + ' → ' + (j.domain || '')); });
+        btn.addEventListener('click', function () { watchJob(j.id, (j.kind === 'uninstall' ? 'Kaldırma: ' : '') + (j.app_name || '') + ' → ' + (j.domain || ''), j.kind); });
         tda.appendChild(btn); tr.appendChild(tda);
         tb.appendChild(tr);
       });
@@ -333,6 +397,12 @@
     });
     $('search').addEventListener('input', function () { FILTER.q = this.value; renderGrid(); });
     $('im-start').addEventListener('click', startInstall);
+    $('um-start').addEventListener('click', startUninstall);
+    ['um-backup', 'um-db', 'um-site'].forEach(function (id) { $(id).addEventListener('change', updateUninstallWarn); });
+    $('um-confirm').addEventListener('input', updateUninstallWarn);
+    $('um-confirm').addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' && !$('um-start').disabled) startUninstall();
+    });
     $('btn-verify').addEventListener('click', verifyCatalog);
     $('btn-save-settings').addEventListener('click', function () {
       show('settings-msg', '');

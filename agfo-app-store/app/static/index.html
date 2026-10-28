@@ -56,7 +56,7 @@
         <p class="muted">Yalnızca bu panelden kurulanlar listelenir.</p>
         <div class="table-wrap">
           <table class="tbl" id="installed-table">
-            <thead><tr><th>Uygulama</th><th>Adres</th><th>Veritabanı</th><th>PHP</th><th>Kurulum</th></tr></thead>
+            <thead><tr><th>Uygulama</th><th>Adres</th><th>Veritabanı</th><th>PHP</th><th>Kurulum</th><th></th></tr></thead>
             <tbody></tbody>
           </table>
         </div>
@@ -65,7 +65,7 @@
 
     <section class="pane" id="pane-jobs">
       <div class="panel">
-        <h3>Kurulum geçmişi</h3>
+        <h3>İşlem geçmişi</h3>
         <div class="table-wrap">
           <table class="tbl" id="jobs-table">
             <thead><tr><th>Durum</th><th>Uygulama</th><th>Hedef</th><th>Zaman</th><th></th></tr></thead>
@@ -135,6 +135,29 @@
         <button class="btn" data-close="install-modal">Vazgeç</button>
         <span id="im-note" class="muted"></span>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- kaldirma penceresi -->
+<div id="uninstall-modal" class="overlay" hidden>
+  <div class="card wide">
+    <div class="card-head">
+      <div id="um-title" class="modal-title"></div>
+      <button class="btn ghost icon" data-close="uninstall-modal">&#10005;</button>
+    </div>
+    <p class="muted" id="um-desc"></p>
+    <label class="check"><input type="checkbox" id="um-backup" checked> Silmeden önce yedek al (dosyalar ve veritabanı sunucuda saklanır)</label>
+    <label class="check" id="um-db-row"><input type="checkbox" id="um-db" checked> Veritabanını sil: <b id="um-db-name"></b></label>
+    <label class="check" id="um-site-row"><input type="checkbox" id="um-site"> CyberPanel sitesini de tamamen sil (alan adı, e-posta, SSL dahil)</label>
+    <div id="um-site-note" class="muted small-note" hidden>Bu site App Store'dan önce de vardı; yalnızca uygulama dosyaları ve veritabanı kaldırılır, site yerinde kalır.</div>
+    <div class="warnbox" id="um-warn"></div>
+    <label for="um-confirm">Onaylamak için alan adını yazın: <b id="um-domain"></b></label>
+    <input id="um-confirm" type="text" spellcheck="false" autocomplete="off">
+    <div id="um-error" class="error" hidden></div>
+    <div class="btn-row">
+      <button class="btn danger" id="um-start" disabled>Kaldır</button>
+      <button class="btn" data-close="uninstall-modal">Vazgeç</button>
     </div>
   </div>
 </div>

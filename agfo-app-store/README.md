@@ -1,4 +1,4 @@
-# AGFO App Store 1.0.1
+# AGFO App Store 1.0.2
 
 CyberPanel için tek tıkla uygulama kurulumu. Uygulamayı seçersiniz; mağaza
 CyberPanel üzerinden yeni site (veya alt alan adı) açar, Let's Encrypt SSL
@@ -15,7 +15,7 @@ AGFO Package Runner ile ZIP'i yükleyin; `install.sh` root olarak çalışır.
 Elle:
 
 ```bash
-unzip agfo-app-store-1.0.1.zip && cd agfo-app-store-1.0.1 && bash install.sh
+unzip agfo-app-store-1.0.2.zip && cd agfo-app-store-1.0.2 && bash install.sh
 ```
 
 Kurulum sonunda panel adresi, menü linki ve (ilk kurulumda) panel şifresi
@@ -72,6 +72,26 @@ alanını güncelleyin (paneli yeniden başlatmaya gerek yok).
 Softaculous'un 400+ uygulamalık kataloğu lisanslı ve kapalıdır; buraya
 kopyalanamaz. Bunun yerine her uygulama tek bir JSON tarifidir; yeni uygulama
 eklemek için mevcut bir tarifi kopyalayıp düzenlemek yeterlidir.
+
+## Kaldırma
+
+*Kurulu uygulamalar* sekmesinde her satırda **Kaldır** düğmesi vardır.
+Onaylamak için alan adını aynen yazmanız gerekir.
+
+- **Yedek (varsayılan açık):** dosyalar silinmez, taşınır; veritabanı
+  `mysqldump` ile dökülür. Hepsi `/opt/agfo-app-store/trash/<alanadi>-<uygulama>-<tarih>/`
+  altında durur (`files/`, `<veritabani>.sql`, `kayit.json`). Yedek
+  alınamazsa hiçbir şey silinmez, işlem durur.
+- **Veritabanı:** CyberPanel üzerinden silinir ve gerçekten silindiği
+  kontrol edilir; silinemezse işlem uyarıyla biter ve ne yapılacağı yazılır.
+- **Site:** yalnızca siteyi App Store açtıysa ve kurulum kök dizindeyse
+  "siteyi de sil" seçeneği çıkar. Önceden var olan sitelerde yalnız
+  uygulama dosyaları ve veritabanı kaldırılır, site yerinde kalır.
+- `.well-known` (SSL doğrulaması) dokunulmadan bırakılır.
+
+Yedekten geri dönmek için `files/` içeriğini site köküne geri taşıyıp
+`.sql` dosyasını aynı adla oluşturduğunuz veritabanına yükleyin. Yedekler
+kendiliğinden silinmez; gerekmediğinde `trash/` altından elle silin.
 
 ## Tarif biçimi
 

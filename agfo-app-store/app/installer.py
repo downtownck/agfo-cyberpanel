@@ -179,6 +179,16 @@ class CyberPanel(object):
                           "--dbPassword", db_pass], "Veritabani olusturulamadi")
         return True
 
+    def delete_database(self, db_name):
+        self.run_checked(["deleteDatabase", "--dbName", db_name],
+                         "Veritabani silinemedi", timeout=300)
+        return True
+
+    def delete_website(self, domain):
+        self.run_checked(["deleteWebsite", "--domainName", domain],
+                         "Site silinemedi", timeout=900)
+        return True
+
     def issue_ssl(self, domain):
         """SSL sonucu SSL_RESULT= satirindadir; basarisizlik kurulumu durdurmaz."""
         rc, out = self.run(["issueSSL", "--domainName", domain], timeout=420)
@@ -409,6 +419,9 @@ class Job(object):
         # her dosyayi 0644 yapar; sifre iceren config dosyalari icin bunlari
         # sonradan geri koyuyoruz.
         self.explicit_modes = []
+        # Tarifin site kokunun disinda actigi veri dizinleri (kaldirmada lazim).
+        self.data_dirs = []
+        self.record = None
         self.max_lines = int(store.CFG.get("limits", "job_log_lines", default=4000) or 4000)
 
     def log(self, message):
@@ -500,6 +513,8 @@ def execute_steps(app, variables, job):
                 if not (target == home or target.startswith(home + os.sep)):
                     raise InstallError("Veri dizini site dizininin disinda: %s" % target)
                 os.makedirs(target, mode=int(spec.get("mode", "0755"), 8), exist_ok=True)
+                if target != home and target not in job.data_dirs:
+                    job.data_dirs.append(target)
                 _, _, uid, gid = demote_spec(variables["site_user"], home)
                 os.chown(target, uid, gid)
                 job.log("  dizin: %s (sahip %s)" % (target, variables["site_user"]))
@@ -667,7 +682,10 @@ def run_job(job):
             "app": app["id"], "app_name": app["name"], "domain": domain,
             "path": clean["path"], "url": result["url"], "docroot": docroot,
             "installed": int(time.time()), "db_name": cp_info["db_name"],
-            "php": clean["php"],
+            "db_user": cp_info["db_user"], "php": clean["php"],
+            # Kaldirmada "siteyi de sil" yalnizca siteyi bu panel actiysa sunulur.
+            "created_site": bool(created_site), "site_user": variables["site_user"],
+            "data_dirs": list(job.data_dirs),
         })
         store.update_job(job.id, status="done", finished=int(time.time()), result=result)
         store.audit("install", {"app": app["id"], "domain": domain, "path": clean["path"]})
@@ -704,6 +722,270 @@ def start_install(app_id, params):
                    "domain": clean["domain"], "path": clean["path"],
                    "status": "queued", "created": int(time.time())})
     thread = threading.Thread(target=run_job, args=(job,), name="install-%s" % job.id, daemon=True)
+    thread.start()
+    return job.id
+
+
+# ---------------------------------------------------------------------------
+# kaldirma
+# ---------------------------------------------------------------------------
+
+TRASH_DIR = os.environ.get("AGFO_STORE_TRASH_DIR", os.path.join(store.ROOT_DIR, "trash"))
+MYSQL_PASSWORD_FILE = os.environ.get("AGFO_STORE_MYSQL_PASSWORD_FILE", "/etc/cyberpanel/mysqlPassword")
+KEEP_IN_DOCROOT = (".well-known",)
+
+
+def _mysql_defaults_file():
+    """CyberPanel'in root MySQL sifresiyle gecici bir --defaults-extra-file yazar.
+
+    Sifre komut satirina konmaz (ps ciktisinda gorunmesin). Dosya yoksa None
+    doner; MariaDB'de root genelde unix_socket ile sifresiz de baglanir.
+    """
+    try:
+        with open(MYSQL_PASSWORD_FILE, "r", encoding="utf-8") as fh:
+            password = fh.read().strip()
+    except OSError:
+        return None
+    if not password:
+        return None
+    import tempfile
+    fd, path = tempfile.mkstemp(prefix="agfo-my-", suffix=".cnf")
+    with os.fdopen(fd, "w") as fh:
+        fh.write("[client]\nuser=root\npassword=%s\n" % password.replace("\n", ""))
+    os.chmod(path, 0o600)
+    return path
+
+
+def _mysql_argv(tool, defaults):
+    argv = [shutil.which(tool) or tool]
+    if defaults:
+        argv.append("--defaults-extra-file=%s" % defaults)
+    return argv
+
+
+def dump_database(db_name, target, logger):
+    if not NAME_RE.match(db_name or ""):
+        raise InstallError("Gecersiz veritabani adi: %s" % db_name)
+    defaults = _mysql_defaults_file()
+    try:
+        argv = _mysql_argv("mysqldump", defaults) + [
+            "--single-transaction", "--quick", "--routines", "--triggers", db_name]
+        with open(target, "wb") as out:
+            proc = subprocess.run(argv, stdout=out, stderr=subprocess.PIPE, timeout=3600)
+        if proc.returncode != 0:
+            raise InstallError("Veritabani yedegi alinamadi: %s"
+                               % proc.stderr.decode("utf-8", "replace").strip()[-300:])
+    except FileNotFoundError:
+        raise InstallError("mysqldump bulunamadi; yedek alinamadi")
+    finally:
+        if defaults:
+            os.unlink(defaults)
+    os.chmod(target, 0o600)
+    logger("veritabani yedegi: %s (%.1f MB)" % (target, os.path.getsize(target) / 1048576.0))
+
+
+def database_exists(db_name):
+    """Silme gercekten oldu mu? Belirlenemezse None."""
+    defaults = _mysql_defaults_file()
+    try:
+        argv = _mysql_argv("mysql", defaults) + [
+            "-N", "-B", "-e", "SELECT SCHEMA_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='%s'" % db_name]
+        proc = subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+        if proc.returncode != 0:
+            return None
+        return proc.stdout.decode("utf-8", "replace").strip() == db_name
+    except (OSError, subprocess.SubprocessError):
+        return None
+    finally:
+        if defaults:
+            os.unlink(defaults)
+
+
+def find_install(domain, path):
+    for item in store.load_installs():
+        if item.get("domain") == domain and (item.get("path") or "/") == path:
+            return item
+    return None
+
+
+def resolve_install_docroot(record):
+    """Kayittaki belge kokunu dogrular; kayit elle bozulmus olsa bile site
+    dizini disinda hicbir seyin silinmemesini garanti eder."""
+    domain = record.get("domain") or ""
+    if not DOMAIN_RE.match(domain):
+        raise InstallError("Kayitta gecersiz alan adi: %s" % domain)
+    base = os.path.realpath(HOME_BASE + "/%s/public_html" % domain)
+    path = record.get("path") or "/"
+    expected = base if path == "/" else os.path.normpath(os.path.join(base, path.lstrip("/")))
+    if not (expected == base or expected.startswith(base + os.sep)):
+        raise InstallError("Kayitta gecersiz alt dizin: %s" % path)
+    if os.path.islink(expected):
+        raise InstallError("Belge koku bir sembolik baglanti; guvenlik icin durduruldu: %s" % expected)
+    recorded = record.get("docroot")
+    if recorded and os.path.normpath(recorded) != expected and os.path.realpath(recorded) != expected:
+        raise InstallError("Kayittaki dizin beklenenle uyusmuyor: %s" % recorded)
+    return base, expected
+
+
+def _domain_busy(domain):
+    for job in JOBS.values():
+        rec = store.get_job(job.id) or {}
+        if rec.get("domain") == domain and rec.get("status") in ("queued", "running"):
+            return True
+    return False
+
+
+def run_uninstall(job):
+    p = job.params
+    domain, path = p["domain"], p["path"]
+    cp = CyberPanel(job.log)
+    record = job.record
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    trash = os.path.join(TRASH_DIR, "%s%s-%s-%s" % (
+        domain, "" if path == "/" else path.replace("/", "_"), record.get("app", "app"), stamp))
+    warnings = []
+    try:
+        store.update_job(job.id, status="running", started=int(time.time()))
+        job.log("kaldirma basliyor: %s -> %s%s" % (record.get("app_name") or record.get("app"), domain, path))
+        base, docroot = resolve_install_docroot(record)
+        job.log("belge koku: %s" % docroot)
+
+        # 1) yedek: hicbir sey silinmeden once alinir; alinamazsa durulur.
+        if p["backup"]:
+            os.makedirs(trash, 0o700, exist_ok=True)
+            os.chmod(TRASH_DIR, 0o700)
+            job.log("yedek dizini: %s" % trash)
+            if p["drop_db"] and record.get("db_name"):
+                dump_database(record["db_name"], os.path.join(trash, "%s.sql" % record["db_name"]), job.log)
+            with open(os.path.join(trash, "kayit.json"), "w", encoding="utf-8") as fh:
+                json.dump(record, fh, indent=2, ensure_ascii=False)
+
+        # 2) dosyalar
+        if os.path.isdir(docroot):
+            names = [n for n in os.listdir(docroot) if not (docroot == base and n in KEEP_IN_DOCROOT)]
+            moved = 0
+            if p["backup"]:
+                files_dir = os.path.join(trash, "files")
+                os.makedirs(files_dir, 0o700, exist_ok=True)
+                for name in names:
+                    shutil.move(os.path.join(docroot, name), os.path.join(files_dir, name))
+                    moved += 1
+                job.log("%d oge yedege tasindi" % moved)
+            else:
+                for name in names:
+                    target = os.path.join(docroot, name)
+                    if os.path.isdir(target) and not os.path.islink(target):
+                        shutil.rmtree(target)
+                    else:
+                        os.unlink(target)
+                    moved += 1
+                job.log("%d oge silindi" % moved)
+            if docroot != base:
+                os.rmdir(docroot)
+                job.log("alt dizin kaldirildi: %s" % path)
+        else:
+            job.log("UYARI: belge koku zaten yok: %s" % docroot)
+
+        # Uygulamanin site kokunun disindaki veri dizinleri (Nextcloud/Moodle)
+        for extra in record.get("data_dirs") or []:
+            extra = os.path.normpath(extra)
+            home = os.path.realpath(HOME_BASE + "/%s" % domain)
+            inside = extra.startswith(home + os.sep)
+            holds_docroot = extra == base or base.startswith(extra + os.sep)
+            if inside and not holds_docroot and os.path.isdir(extra) and not os.path.islink(extra):
+                if p["backup"]:
+                    shutil.move(extra, os.path.join(trash, "data-" + os.path.basename(extra)))
+                else:
+                    shutil.rmtree(extra)
+                job.log("veri dizini kaldirildi: %s" % extra)
+
+        # 3) veritabani
+        if p["drop_db"] and record.get("db_name"):
+            db = record["db_name"]
+            try:
+                cp.delete_database(db)
+                exists = database_exists(db)
+                if exists:
+                    raise InstallError("CyberPanel basarili dedi ama veritabani hala duruyor")
+                job.log("veritabani silindi: %s%s" % (db, "" if exists is False else " (dogrulanamadi)"))
+            except InstallError as exc:
+                msg = "veritabani silinemedi (%s): %s. CyberPanel > Databases > Delete Database ile silin." % (db, exc)
+                job.log("UYARI: " + msg)
+                warnings.append(msg)
+        elif record.get("db_name"):
+            job.log("veritabani birakildi: %s" % record["db_name"])
+
+        # 4) site
+        if p["delete_site"]:
+            cp.delete_website(domain)
+            job.log("CyberPanel sitesi silindi: %s" % domain)
+        elif os.path.isdir(base):
+            # Bos belge kokunu OpenLiteSpeed'in bekledigi sahiplikte birak.
+            user = record.get("site_user") or cp.site_user(domain)
+            if user:
+                fix_permissions(HOME_BASE + "/%s" % domain, base, user, job.log)
+
+        store.remove_install(domain, path)
+        result = {"kind": "uninstall", "domain": domain, "path": path,
+                  "backup": trash if p["backup"] else "", "warnings": warnings,
+                  "site_deleted": bool(p["delete_site"])}
+        store.update_job(job.id, status="done", finished=int(time.time()), result=result)
+        store.audit("uninstall", {"app": record.get("app"), "domain": domain, "path": path,
+                                  "drop_db": p["drop_db"], "delete_site": p["delete_site"],
+                                  "backup": result["backup"], "warnings": len(warnings)})
+        job.log("KALDIRMA TAMAM%s" % (" (%d uyari)" % len(warnings) if warnings else ""))
+    except InstallError as exc:
+        job.log("HATA: %s" % exc)
+        store.update_job(job.id, status="error", finished=int(time.time()), error=str(exc))
+        store.audit("uninstall_failed", {"domain": domain, "path": path, "error": str(exc)})
+    except Exception as exc:
+        job.log("BEKLENMEYEN HATA: %s" % exc)
+        store.update_job(job.id, status="error", finished=int(time.time()), error=str(exc))
+    finally:
+        with _run_lock:
+            RUNNING["count"] = max(0, RUNNING["count"] - 1)
+
+
+def start_uninstall(params):
+    domain = (params.get("domain") or "").strip().lower()
+    path = (params.get("path") or "/").strip() or "/"
+    record = find_install(domain, path)
+    if not record:
+        raise InstallError("Bu adreste kayitli kurulum yok: %s%s" % (domain, path))
+    if (params.get("confirm") or "").strip().lower() != domain:
+        raise InstallError("Onay icin alan adini aynen yazin: %s" % domain)
+    clean = {
+        "domain": domain, "path": path,
+        "drop_db": bool(params.get("drop_db", True)) and bool(record.get("db_name")),
+        "backup": bool(params.get("backup", True)),
+        "delete_site": bool(params.get("delete_site")),
+    }
+    if clean["delete_site"]:
+        if not record.get("created_site"):
+            raise InstallError("Bu site App Store'dan once de vardi; site silme yalnizca "
+                               "App Store'un actigi sitelerde yapilabilir.")
+        others = [i for i in store.load_installs()
+                  if i.get("domain") == domain and (i.get("path") or "/") != path]
+        if others:
+            raise InstallError("Bu sitede baska kurulumlar da var; once onlari kaldirin.")
+        if path != "/":
+            raise InstallError("Site silme yalnizca kok dizindeki kurulumlarda yapilabilir.")
+    resolve_install_docroot(record)  # gecersiz kayit aninda reddedilsin
+    if _domain_busy(domain):
+        raise InstallError("Bu alan adinda suren bir is var; bitmesini bekleyin.")
+    limit = int(store.CFG.get("limits", "max_concurrent_jobs", default=2) or 2)
+    with _run_lock:
+        if RUNNING["count"] >= limit:
+            raise InstallError("Ayni anda en fazla %d is calisabilir." % limit)
+        RUNNING["count"] += 1
+    name = record.get("app_name") or record.get("app") or "Uygulama"
+    job = Job({"id": record.get("app", "app"), "name": name}, clean)
+    job.record = record
+    JOBS[job.id] = job
+    store.add_job({"id": job.id, "kind": "uninstall", "app": record.get("app"),
+                   "app_name": name, "domain": domain, "path": path,
+                   "status": "queued", "created": int(time.time())})
+    thread = threading.Thread(target=run_uninstall, args=(job,), name="uninstall-%s" % job.id, daemon=True)
     thread.start()
     return job.id
 

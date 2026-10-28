@@ -32,7 +32,7 @@ import installer
 import store
 
 APP_NAME = "AGFO App Store"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.2"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -322,6 +322,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.api_password()
             if path == "/api/install":
                 return self.api_install()
+            if path == "/api/uninstall":
+                return self.api_uninstall()
             if path == "/api/verify":
                 return self.reply(200, {"ok": True, "results": installer.verify_catalog()})
             if path == "/api/settings":
@@ -486,6 +488,17 @@ class Handler(BaseHTTPRequestHandler):
             return self.fail(404, "uygulama bulunamadi")
         job_id = installer.start_install(app_id, params)
         store.audit("install_start", {"app": app_id, "domain": params.get("domain")})
+        return self.reply(200, {"ok": True, "job": job_id})
+
+    def api_uninstall(self):
+        data = self.body_json()
+        # Gelmeyen alanlar gonderilmez: varsayilanlar (yedek al, DB sil) motorda.
+        params = {k: data[k] for k in ("domain", "path", "confirm", "drop_db", "backup", "delete_site") if k in data}
+        job_id = installer.start_uninstall(params)
+        store.audit("uninstall_start", {"domain": params.get("domain"), "path": params.get("path"),
+                                        "drop_db": bool(params.get("drop_db")),
+                                        "delete_site": bool(params.get("delete_site")),
+                                        "backup": bool(params.get("backup"))})
         return self.reply(200, {"ok": True, "job": job_id})
 
     def api_settings(self):

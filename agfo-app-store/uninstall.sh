@@ -29,6 +29,7 @@ if [ "${AGFO_STORE_PURGE:-0}" = "1" ]; then
   say "panel tamamen silindi"
 else
   rm -rf "${INSTALL_DIR}/app" "${INSTALL_DIR}/work"
+  [ -d "${INSTALL_DIR}/trash" ] && say "kaldirma yedekleri korundu: ${INSTALL_DIR}/trash"
   say "ayarlar ve kurulum kayitlari ${INSTALL_DIR}/config altinda korundu"
   say "tamamen silmek icin: AGFO_STORE_PURGE=1 bash $0"
 fi
