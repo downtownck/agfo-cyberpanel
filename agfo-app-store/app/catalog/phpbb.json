@@ -19,11 +19,11 @@
     ]
   },
   "download": {
-    "url": "https://download.phpbb.com/pub/release/3.3/3.3.14/phpBB-3.3.14.zip",
+    "url": "https://download.phpbb.com/pub/release/3.3/3.3.19/phpBB-3.3.19.zip",
     "format": "zip",
     "strip": 1
   },
-  "version_note": "Sürüm katalogda sabitlidir.",
+  "version_note": "3.3.19",
   "finish": {
     "path": "/install/app.php/install",
     "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."

@@ -23,11 +23,11 @@
     ]
   },
   "download": {
-    "url": "https://releases.wikimedia.org/mediawiki/1.43/mediawiki-1.43.1.tar.gz",
+    "url": "https://releases.wikimedia.org/mediawiki/1.43/mediawiki-1.43.10.tar.gz",
     "format": "tar.gz",
     "strip": 1
   },
-  "version_note": "Sürüm katalogda sabitlidir; yeni sürüm çıktığında katalog dosyasından güncellenir.",
+  "version_note": "1.43.10 LTS",
   "fields": [
     {
       "id": "admin_user",

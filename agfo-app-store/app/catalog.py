@@ -49,7 +49,10 @@ def _validate(data, path):
     if data.get("install_mode", "web") not in ("cli", "web"):
         raise ValueError("%s: install_mode cli veya web olmali" % data["id"])
     download = data.get("download") or {}
-    if not str(download.get("url", "")).startswith("https://"):
+    if download.get("github"):
+        if not re.match(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", str(download["github"])):
+            raise ValueError("%s: gecersiz github deposu" % data["id"])
+    elif not str(download.get("url", "")).startswith("https://"):
         raise ValueError("%s: indirme adresi https olmali" % data["id"])
     if download.get("format") not in ("tar.gz", "tgz", "zip", "tar.bz2"):
         raise ValueError("%s: desteklenmeyen arsiv bicimi" % data["id"])

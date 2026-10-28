@@ -127,5 +127,6 @@
     "path": "/wp-admin/",
     "note": "Yönetim paneline yukarıdaki kullanıcı ve şifreyle girin."
   },
-  "database": true
+  "database": true,
+  "version_note": "Her zaman son sürüm"
 }

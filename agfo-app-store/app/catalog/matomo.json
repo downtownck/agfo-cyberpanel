@@ -31,5 +31,6 @@
   },
   "database": true,
   "install_mode": "web",
-  "fields": []
+  "fields": [],
+  "version_note": "Her zaman son sürüm"
 }

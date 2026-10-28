@@ -23,11 +23,12 @@
     ]
   },
   "download": {
-    "url": "https://github.com/Dolibarr/dolibarr/archive/refs/tags/21.0.0.tar.gz",
+    "url": "https://github.com/Dolibarr/dolibarr/archive/refs/tags/24.0.1.tar.gz",
     "format": "tar.gz",
-    "strip": 1
+    "strip": 1,
+    "only": "htdocs"
   },
-  "version_note": "Sürüm katalogda sabitlidir.",
+  "version_note": "24.0.1",
   "finish": {
     "path": "/install/",
     "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."

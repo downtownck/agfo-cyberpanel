@@ -36,5 +36,6 @@
     "path": "/",
     "note": "İlk açılışta yönetici hesabınızı tarayıcıdan oluşturacaksınız."
   },
-  "fields": []
+  "fields": [],
+  "version_note": "Her zaman son sürüm (yönetim paneliyle)"
 }

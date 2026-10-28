@@ -1,4 +1,4 @@
-# AGFO App Store 1.0.2
+# AGFO App Store 1.0.3
 
 CyberPanel için tek tıkla uygulama kurulumu. Uygulamayı seçersiniz; mağaza
 CyberPanel üzerinden yeni site (veya alt alan adı) açar, Let's Encrypt SSL
@@ -15,7 +15,7 @@ AGFO Package Runner ile ZIP'i yükleyin; `install.sh` root olarak çalışır.
 Elle:
 
 ```bash
-unzip agfo-app-store-1.0.2.zip && cd agfo-app-store-1.0.2 && bash install.sh
+unzip agfo-app-store-1.0.3.zip && cd agfo-app-store-1.0.3 && bash install.sh
 ```
 
 Kurulum sonunda panel adresi, menü linki ve (ilk kurulumda) panel şifresi
@@ -37,41 +37,52 @@ Alan adı verilmezse betik CyberPanel'in 8090 portundaki sertifikadan alan
 adını okur ve aynı Let's Encrypt sertifikasını kullanır; böylece tarayıcı
 uyarısı çıkmaz.
 
-## Katalog (16 uygulama)
+## Katalog (12 uygulama)
 
-| Uygulama | Kurulum | Sürüm |
-|---|---|---|
-| WordPress | tam otomatik (wp-cli) | latest |
-| Nextcloud | tam otomatik (occ) | latest |
-| Moodle | tam otomatik | latest |
-| MediaWiki | tam otomatik | 1.43.1 |
-| Grav | tam otomatik | latest |
-| Joomla | sihirbaz | 5.3.2 |
-| Drupal | sihirbaz | 11.1.0 |
-| Matomo | sihirbaz | latest |
-| phpBB | sihirbaz | 3.3.14 |
-| PrestaShop | sihirbaz | 8.2.0 |
-| Dolibarr | sihirbaz | 21.0.0 |
-| EspoCRM | sihirbaz | 8.4.2 |
-| SuiteCRM | sihirbaz | 8.7.1 |
-| LimeSurvey | sihirbaz | 6.6.4 |
-| phpMyFAQ | sihirbaz | 4.0.9 |
-| Laravel | sihirbaz | 11.0.0 |
+| Uygulama | Kurulum | Kaynak | PHP |
+|---|---|---|---|
+| WordPress | tam otomatik (wp-cli) | resmi "son sürüm" adresi | 7.4+ |
+| Nextcloud | tam otomatik (occ) | resmi "son sürüm" adresi | 8.1+ |
+| Moodle | tam otomatik | 4.5 LTS son yama (resmi) | 8.1+ |
+| MediaWiki | tam otomatik | 1.43.10 LTS | 8.1+ |
+| Grav | tam otomatik | resmi "son sürüm" adresi | 8.0+ |
+| Joomla | sihirbaz | GitHub'daki son kararlı sürüm | 8.3+ |
+| Drupal | sihirbaz | resmi "son sürüm" adresi | 8.3+ |
+| EspoCRM | sihirbaz | GitHub'daki son kararlı sürüm | 8.3+ |
+| phpMyFAQ | sihirbaz | 4.1.11 | 8.3+ |
+| Matomo | sihirbaz | resmi "son sürüm" adresi | 8.0+ |
+| phpBB | sihirbaz | 3.3.19 | 8.0+ |
+| Dolibarr | sihirbaz | 24.0.1 (yalnız `htdocs/`) | 8.1+ |
 
 **Tam otomatik**: kurulum bittiğinde yönetici kullanıcı ve şifre hazırdır.
 **Sihirbaz**: site, SSL, veritabanı ve dosyalar hazırlanır; sonuç ekranındaki
 veritabanı bilgileriyle uygulamanın kendi kurulum sihirbazını tarayıcıda
 bitirirsiniz.
 
-**Önemli:** Sürüme sabitlenmiş indirme adresleri zamanla eskir. İlk iş olarak
-*Ayarlar → Kataloğu doğrula* düğmesine basın; sunucu her adresi kontrol eder
-ve erişilemeyenleri listeler. Adresi değiştirmek için
-`/opt/agfo-app-store/app/catalog/<uygulama>.json` içindeki `download.url`
-alanını güncelleyin (paneli yeniden başlatmaya gerek yok).
+Kaynaklar mümkün olduğunca sürüm numarası içermeyen resmi "son sürüm"
+adreslerinden ya da GitHub'ın son kararlı sürüm kaydından kurulum anında
+bulunur; böylece eskimez. Sürüme sabit olanlar (phpBB, phpMyFAQ, MediaWiki,
+Dolibarr) 2026-10-28'de resmi kaynaklarda doğrulandı ve zamanla güncellenmelidir.
+İlk iş olarak *Ayarlar → Kataloğu doğrula* düğmesine basın: sunucu her
+uygulamanın gerçek indirme adresini kurulumda kullanılan yolla yoklar.
 
-Softaculous'un 400+ uygulamalık kataloğu lisanslı ve kapalıdır; buraya
-kopyalanamaz. Bunun yerine her uygulama tek bir JSON tarifidir; yeni uygulama
-eklemek için mevcut bir tarifi kopyalayıp düzenlemek yeterlidir.
+**PHP:** mevcut bir siteye kurulumda uygulama o sitenin PHP sürümüyle çalışır.
+Uygulama daha yüksek bir sürüm istiyorsa kurulum hiçbir şey oluşturmadan
+reddedilir ve ne yapılacağı yazılır. Yeni site açılırken gereken sürüm
+otomatik seçilir; sunucuda o `lsphp` kurulu değilse yine baştan reddedilir.
+
+**Çıkarılanlar:** PrestaShop 9 (GitHub'da kurulabilir paket yok, yalnız
+derlenmesi gereken kaynak), SuiteCRM 8 (belge kökünün `public/` olmasını
+ister), LimeSurvey (paket adı her sürümde değişiyor, kalıcı adres yok) ve
+Laravel (uygulama değil, Composer isteyen iskelet).
+
+## Kurulum başarısız olursa
+
+Önce indirme yapılır ve dosyanın gerçekten arşiv olduğu doğrulanır; adres
+bozuksa site ya da veritabanı hiç açılmaz. Sonraki bir adım başarısız olursa
+o kurulumun oluşturduğu her şey geri alınır: veritabanı, alt dizin, veri
+klasörleri ve (siteyi bu kurulum açtıysa) site. Önceden var olan site ve
+dosyalara dokunulmaz.
 
 ## Kaldırma
 

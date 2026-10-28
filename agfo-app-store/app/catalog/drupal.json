@@ -21,11 +21,11 @@
     ]
   },
   "download": {
-    "url": "https://ftp.drupal.org/files/projects/drupal-11.1.0.tar.gz",
+    "url": "https://www.drupal.org/download-latest/tar.gz",
     "format": "tar.gz",
     "strip": 1
   },
-  "version_note": "Sürüm katalogda sabitlidir.",
+  "version_note": "Her zaman son sürüm · PHP 8.3+",
   "finish": {
     "path": "/core/install.php",
     "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."

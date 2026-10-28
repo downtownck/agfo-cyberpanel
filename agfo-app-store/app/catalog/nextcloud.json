@@ -51,7 +51,7 @@
   "steps": [
     {
       "mkdir": {
-        "path": "{site_home}/nextcloud-data",
+        "path": "{site_home}/nextcloud-data-{db_name}",
         "mode": "0770",
         "base": "home"
       }
@@ -72,7 +72,7 @@
           "--database-host={db_host}",
           "--admin-user={admin_user}",
           "--admin-pass={admin_pass}",
-          "--data-dir={site_home}/nextcloud-data"
+          "--data-dir={site_home}/nextcloud-data-{db_name}"
         ],
         "timeout": 1200
       }
@@ -95,5 +95,6 @@
     "path": "/",
     "note": "Nextcloud'a yönetici kullanıcısıyla girin."
   },
-  "database": true
+  "database": true,
+  "version_note": "Her zaman son sürüm"
 }

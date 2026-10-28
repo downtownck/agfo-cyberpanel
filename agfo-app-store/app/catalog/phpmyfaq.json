@@ -13,7 +13,7 @@
     "bilgi tabanı"
   ],
   "requires": {
-    "php": "8.2",
+    "php": "8.3",
     "extensions": [
       "mysqli",
       "gd",
@@ -22,11 +22,11 @@
     ]
   },
   "download": {
-    "url": "https://download.phpmyfaq.de/phpMyFAQ-4.0.9.zip",
+    "url": "https://download.phpmyfaq.de/phpMyFAQ-4.1.11.zip",
     "format": "zip",
     "strip": 1
   },
-  "version_note": "Sürüm katalogda sabitlidir.",
+  "version_note": "4.1.11 · PHP 8.3+",
   "finish": {
     "path": "/setup/index.php",
     "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."

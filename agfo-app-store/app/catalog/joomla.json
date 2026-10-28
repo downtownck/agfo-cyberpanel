@@ -13,7 +13,7 @@
     "çok dilli"
   ],
   "requires": {
-    "php": "8.1",
+    "php": "8.3",
     "extensions": [
       "mysqli",
       "gd",
@@ -22,11 +22,12 @@
     ]
   },
   "download": {
-    "url": "https://github.com/joomla/joomla-cms/releases/download/5.3.2/Joomla_5.3.2-Stable-Full_Package.zip",
+    "github": "joomla/joomla-cms",
+    "asset": "-Stable-Full_Package\\.zip$",
     "format": "zip",
     "strip": 0
   },
-  "version_note": "Sürüm katalogda sabitlidir.",
+  "version_note": "GitHub'daki son kararlı sürüm · PHP 8.3+",
   "finish": {
     "path": "/",
     "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgilerini panel size gösteriyor."

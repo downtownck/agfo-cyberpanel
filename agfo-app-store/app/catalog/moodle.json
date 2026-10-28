@@ -56,7 +56,7 @@
   "steps": [
     {
       "mkdir": {
-        "path": "{site_home}/moodledata",
+        "path": "{site_home}/moodledata-{db_name}",
         "mode": "0770",
         "base": "home"
       }
@@ -65,13 +65,15 @@
       "run": {
         "argv": [
           "{php_bin}",
+          "-d",
+          "max_input_vars=5000",
           "{docroot}/admin/cli/install.php",
           "--non-interactive",
           "--agree-license",
           "--lang=tr",
           "--wwwroot={url}",
-          "--dataroot={site_home}/moodledata",
-          "--dbtype=mysqli",
+          "--dataroot={site_home}/moodledata-{db_name}",
+          "--dbtype=mariadb",
           "--dbhost={db_host}",
           "--dbname={db_name}",
           "--dbuser={db_user}",
@@ -88,7 +90,8 @@
   ],
   "finish": {
     "path": "/login/",
-    "note": "İlk girişte Moodle bazı ayarları tamamlamanızı isteyebilir."
+    "note": "Moodle hazır. Not: Moodle tarayıcı tarafında da max_input_vars ≥ 5000 ister; OpenLiteSpeed bunu site bazında ayarlatmaz. Sunucunun PHP ayarında (CyberPanel > PHP > Edit PHP Configs) max_input_vars değerini 5000 yapın; aksi halde Moodle güncellemeleri bu uyarıda durur."
   },
-  "database": true
+  "database": true,
+  "version_note": "4.5 LTS (son yama)"
 }

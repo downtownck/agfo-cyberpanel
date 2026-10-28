@@ -18,6 +18,7 @@ import subprocess
 import tarfile
 import threading
 import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -54,12 +55,34 @@ def random_password(length=20):
 def php_binary(version=None):
     version = (version or store.CFG.get("cyberpanel", "default_php", default="8.2") or "8.2")
     compact = version.replace(".", "")
-    for candidate in ("/usr/local/lsws/lsphp%s/bin/php" % compact,
-                      "/usr/bin/php%s" % version,
-                      "/usr/bin/php"):
+    template = os.environ.get("AGFO_STORE_PHP_TEMPLATE", "/usr/local/lsws/lsphp{v}/bin/php")
+    for candidate in (template.replace("{v}", compact), "/usr/bin/php%s" % version):
         if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
             return candidate
-    return shutil.which("php") or "/usr/bin/php"
+    # Baska surume sessizce dusmek, uygulamayi yanlis PHP ile kurmak demektir.
+    raise InstallError("PHP %s bu sunucuda kurulu degil (lsphp%s). "
+                       "CyberPanel > PHP > Install PHP ile kurun." % (version, compact))
+
+
+def _ver(text):
+    try:
+        return tuple(int(x) for x in str(text).split(".")[:2])
+    except ValueError:
+        return (0, 0)
+
+
+def site_php_version(domain):
+    """Mevcut sitenin OpenLiteSpeed'de calistigi PHP surumu (ornek '8.2')."""
+    vhosts = os.environ.get("AGFO_STORE_VHOST_DIR", "/usr/local/lsws/conf/vhosts")
+    for conf in ("%s/%s/vhost.conf" % (vhosts, domain),):
+        try:
+            with open(conf, "r", encoding="utf-8", errors="replace") as fh:
+                m = re.search(r"lsphp(\d)(\d+)", fh.read())
+            if m:
+                return "%s.%s" % (m.group(1), m.group(2))
+        except OSError:
+            continue
+    return None
 
 
 def safe_join(base, rel):
@@ -235,7 +258,21 @@ def download(url, target, logger, timeout=None):
         raise InstallError("Indirme kapali (network.allow_downloads=false)")
     timeout = timeout or int(store.CFG.get("limits", "download_timeout", default=900) or 900)
     logger("indiriliyor: %s" % url)
-    req = urllib.request.Request(url, headers={"User-Agent": "AGFO-App-Store/1.0"})
+    # Bazi indirme sunuculari (Cloudflare arkasindakiler) Python istemcisini
+    # 403 ile reddeder. Sunucudaki curl daha genis kabul gorur; once onu dene.
+    curl = shutil.which("curl")
+    if curl:
+        proc = subprocess.run(
+            [curl, "-fsSL", "--proto", "=https", "--proto-redir", "=https",
+             "--max-redirs", "10", "--max-time", str(timeout), "--retry", "2",
+             "--max-filesize", str(2 * 1024 * 1024 * 1024), "-o", target, url],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout + 60)
+        if proc.returncode == 0 and os.path.getsize(target) > 0:
+            logger("indirildi: %.1f MB" % (os.path.getsize(target) / 1048576.0))
+            return
+        logger("  curl basarisiz (%s); yedek istemci deneniyor"
+               % (proc.stderr.decode("utf-8", "replace").strip()[-160:] or proc.returncode))
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AGFO-App-Store/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp, open(target, "wb") as out:
             total = 0
@@ -252,6 +289,79 @@ def download(url, target, logger, timeout=None):
     except Exception as exc:
         raise InstallError("Indirme basarisiz: %s" % exc)
     logger("indirildi: %.1f MB" % (os.path.getsize(target) / 1048576.0))
+
+
+GITHUB_API = os.environ.get("AGFO_STORE_GITHUB_API", "https://api.github.com")
+
+
+def _http_json(url, timeout=30):
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "AGFO-App-Store", "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def resolve_download(spec, logger):
+    """Tarifteki indirme tanimini somut bir adrese cevirir.
+
+    {"url": ...}                          sabit adres (resmi 'latest' adresleri)
+    {"github": "sahip/depo", "asset": re} GitHub'daki son kararli surumun,
+                                          desene uyan dosyasi. Surum numarasi
+                                          tarife yazilmaz, boylece eskimez.
+    """
+    out = dict(spec)
+    repo = spec.get("github")
+    if not repo:
+        return out
+    if not re.match(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", repo):
+        raise InstallError("Gecersiz GitHub deposu: %s" % repo)
+    pattern = re.compile(spec.get("asset") or r"\.zip$")
+    try:
+        data = _http_json("%s/repos/%s/releases/latest" % (GITHUB_API, repo))
+    except Exception as exc:
+        raise InstallError("GitHub surum bilgisi alinamadi (%s): %s" % (repo, exc))
+    assets = data.get("assets") or []
+    for asset in assets:
+        if pattern.search(asset.get("name", "")):
+            out["url"] = asset["browser_download_url"]
+            out["version"] = data.get("tag_name", "")
+            logger("son surum: %s (%s)" % (out["version"], asset["name"]))
+            return out
+    raise InstallError("%s son surumunde (%s) uygun paket yok; aranan: %s"
+                       % (repo, data.get("tag_name", "?"), pattern.pattern))
+
+
+def check_archive(path, fmt):
+    """Inen dosya gercekten arsiv mi? (Bazi sunucular 200 ile HTML doner.)"""
+    try:
+        if fmt == "zip":
+            ok = zipfile.is_zipfile(path)
+        else:
+            ok = tarfile.is_tarfile(path)
+    except OSError:
+        ok = False
+    if not ok:
+        with open(path, "rb") as fh:
+            head = fh.read(120).decode("utf-8", "replace").strip().replace("\n", " ")
+        raise InstallError("Indirilen dosya gecerli bir %s arsivi degil (baslangic: %s)" % (fmt, head[:80]))
+
+
+def archive_target(dest, name):
+    """Arsivdeki bir uyenin hedef yolu; site kokunun disina cikamaz.
+
+    Tarif yollarindaki dar karakter kurali (SAFE_REL) burada KULLANILMAZ:
+    gercek paketlerde bosluklu, Unicode ya da parantezli dosya adlari olur
+    (ornek: EspoCRM vendor testleri). Guvenlik yapisal denetimle saglanir.
+    """
+    if not name or "\x00" in name or "\\" in name:
+        return None
+    parts = [p for p in name.split("/") if p not in ("", ".")]
+    if not parts or ".." in parts or name.startswith("/"):
+        return None
+    target = os.path.normpath(os.path.join(dest, *parts))
+    if not target.startswith(dest.rstrip("/") + os.sep):
+        return None
+    return target
 
 
 def _safe_members_tar(archive, strip):
@@ -272,13 +382,34 @@ def _safe_members_tar(archive, strip):
         yield member
 
 
-def extract(archive_path, fmt, dest, strip, logger):
+def extract(archive_path, fmt, dest, strip, logger, only=""):
+    """only: arsivin (strip sonrasi) yalnizca bu alt klasorunu belge kokune koy.
+    Ornek: Dolibarr kaynak arsivinde uygulama 'htdocs/' altindadir."""
+    if only:
+        import tempfile
+        staging = tempfile.mkdtemp(prefix="agfo-x-", dir=store.WORK_DIR)
+        try:
+            extract(archive_path, fmt, staging, strip, logger)
+            src = os.path.join(staging, only.strip("/"))
+            if not os.path.isdir(src):
+                raise InstallError("Arsivde beklenen klasor yok: %s" % only)
+            for name in os.listdir(src):
+                shutil.move(os.path.join(src, name), os.path.join(dest, name))
+            logger("yalnizca '%s' klasoru kuruldu" % only)
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
+        return
     logger("arsiv aciliyor (%s)" % fmt)
     if fmt in ("tar.gz", "tgz", "tar.bz2"):
         mode = "r:bz2" if fmt == "tar.bz2" else "r:gz"
         with tarfile.open(archive_path, mode) as archive:
-            archive.extractall(dest, members=_safe_members_tar(archive, strip))
+            members = _safe_members_tar(archive, strip)
+            if hasattr(tarfile, "data_filter"):
+                archive.extractall(dest, members=members, filter="data")
+            else:
+                archive.extractall(dest, members=members)
     elif fmt == "zip":
+        skipped = 0
         with zipfile.ZipFile(archive_path) as archive:
             for info in archive.infolist():
                 name = info.filename
@@ -291,13 +422,18 @@ def extract(archive_path, fmt, dest, strip, logger):
                     name = "/".join(parts[strip:])
                 if not name:
                     continue
-                target = safe_join(dest, name)
+                target = archive_target(dest, name)
+                if target is None:
+                    skipped += 1
+                    continue
                 if info.is_dir() or name.endswith("/"):
                     os.makedirs(target, exist_ok=True)
                     continue
                 os.makedirs(os.path.dirname(target), exist_ok=True)
                 with archive.open(info) as src, open(target, "wb") as dst:
                     shutil.copyfileobj(src, dst)
+        if skipped:
+            logger("UYARI: guvenli olmayan %d arsiv girdisi atlandi" % skipped)
     else:
         raise InstallError("Desteklenmeyen arsiv bicimi: %s" % fmt)
 
@@ -512,8 +648,12 @@ def execute_steps(app, variables, job):
                 target = os.path.normpath(spec["path"])
                 if not (target == home or target.startswith(home + os.sep)):
                     raise InstallError("Veri dizini site dizininin disinda: %s" % target)
+                existed = os.path.exists(target)
                 os.makedirs(target, mode=int(spec.get("mode", "0755"), 8), exist_ok=True)
                 if target != home and target not in job.data_dirs:
+                    # Yalnizca BU isin actigi dizin geri alinir.
+                    if not existed and getattr(job, "rollback", None) is not None:
+                        job.rollback.setdefault("data_dirs", []).append(target)
                     job.data_dirs.append(target)
                 _, _, uid, gid = demote_spec(variables["site_user"], home)
                 os.chown(target, uid, gid)
@@ -589,6 +729,8 @@ def run_job(job):
     cp = CyberPanel(job.log)
     created_site = False
     domain = None
+    rb = {}            # geri alma defteri: bu isin olusturdugu kaynaklar
+    job.rollback = rb
     try:
         store.update_job(job.id, status="running", started=int(time.time()))
         # Parametreler start_install icinde dogrulandi; burada yeniden
@@ -597,12 +739,25 @@ def run_job(job):
         domain = clean["domain"]
         job.log("kurulum basliyor: %s -> %s%s" % (app["name"], domain, clean["path"]))
 
+        # 0) once indir: adres bozuksa site ve veritabani hic acilmasin.
+        if not os.path.isdir(store.WORK_DIR):
+            os.makedirs(store.WORK_DIR, 0o700)
+        download_spec = resolve_download(app["download"], job.log)
+        archive = os.path.join(store.WORK_DIR, "%s-%s" % (job.id, os.path.basename(
+            urllib.parse.urlparse(download_spec["url"]).path) or "archive"))
+        rb["archive"] = archive
+        download(download_spec["url"], archive, job.log)
+        check_archive(archive, download_spec.get("format", "tar.gz"))
+
         # 1) site
         created_site = cp.create_website(domain, clean["email"], clean["php"])
+        rb["site"] = created_site
         docroot_base = HOME_BASE + "/%s/public_html" % domain
         docroot = docroot_base if clean["path"] == "/" else os.path.join(docroot_base, clean["path"].lstrip("/"))
         if not os.path.isdir(docroot_base):
             raise InstallError("Site dizini olusmadi: %s" % docroot_base)
+        if not os.path.isdir(docroot):
+            rb["docroot_dir"] = docroot          # biz actik; hatada tamamen silinir
         os.makedirs(docroot, exist_ok=True)
         if os.listdir(docroot) and not params.get("overwrite"):
             leftovers = [n for n in os.listdir(docroot) if n not in ("index.html", ".well-known")]
@@ -611,6 +766,8 @@ def run_job(job):
         for name in list(os.listdir(docroot)):
             if name == "index.html":
                 os.unlink(os.path.join(docroot, name))
+        if not params.get("overwrite"):
+            rb["docroot_clean"] = docroot        # bos idi; hatada icerigi bosaltilir
 
         # Site kullanicisi CyberPanel tarafindan uretilir (ornek: examp4821);
         # alan adindan tahmin edilemez, dizin sahibinden okunur.
@@ -633,20 +790,15 @@ def run_job(job):
             cp_info["db_pass"] = random_password(24)
             if not (NAME_RE.match(cp_info["db_name"]) and NAME_RE.match(cp_info["db_user"])):
                 raise InstallError("Veritabani adi uretilemedi")
+            rb["db"] = cp_info["db_name"]
             cp.create_database(domain, cp_info["db_name"], cp_info["db_user"], cp_info["db_pass"])
             job.log("veritabani olusturuldu: %s" % cp_info["db_name"])
 
         variables = build_variables(app, clean, cp_info)
 
         # 3) dosyalar
-        if not os.path.isdir(store.WORK_DIR):
-            os.makedirs(store.WORK_DIR, 0o700)
-        download_spec = app["download"]
-        archive = os.path.join(store.WORK_DIR, "%s-%s" % (job.id, os.path.basename(
-            urllib.parse.urlparse(download_spec["url"]).path) or "archive"))
-        download(substitute(download_spec["url"], variables), archive, job.log)
         extract(archive, download_spec.get("format", "tar.gz"), docroot,
-                int(download_spec.get("strip", 0)), job.log)
+                int(download_spec.get("strip", 0)), job.log, download_spec.get("only", ""))
         try:
             os.unlink(archive)
         except OSError:
@@ -687,20 +839,82 @@ def run_job(job):
             "created_site": bool(created_site), "site_user": variables["site_user"],
             "data_dirs": list(job.data_dirs),
         })
+        rb.clear()
         store.update_job(job.id, status="done", finished=int(time.time()), result=result)
         store.audit("install", {"app": app["id"], "domain": domain, "path": clean["path"]})
         job.log("KURULUM TAMAM: %s" % result["url"])
 
     except InstallError as exc:
         job.log("HATA: %s" % exc)
+        rollback(cp, rb, job, domain)
         store.update_job(job.id, status="error", finished=int(time.time()), error=str(exc))
         store.audit("install_failed", {"app": app.get("id"), "domain": domain, "error": str(exc)})
     except Exception as exc:  # beklenmeyen
         job.log("BEKLENMEYEN HATA: %s" % exc)
+        rollback(cp, rb, job, domain)
         store.update_job(job.id, status="error", finished=int(time.time()), error=str(exc))
     finally:
+        archive_path = rb.get("archive") if rb else None
+        if archive_path and os.path.exists(archive_path):
+            try:
+                os.unlink(archive_path)
+            except OSError:
+                pass
         with _run_lock:
             RUNNING["count"] = max(0, RUNNING["count"] - 1)
+
+
+def rollback(cp, rb, job, domain):
+    """Basarisiz kurulumun olusturdugu her seyi geri alir.
+
+    Yalnizca BU isin olusturdugu kaynaklara dokunur: onceden var olan site,
+    onceden dolu dizin ya da baska kurulumun veritabani asla silinmez.
+    Geri almadaki bir hata asil hatayi gizlemez; gunluge yazilir.
+    """
+    if not rb or not any(rb.get(k) for k in ("site", "db", "docroot_dir", "docroot_clean", "data_dirs")):
+        return
+    job.log("geri aliniyor: bu kurulumun olusturdugu kaynaklar siliniyor")
+    if rb.get("site"):
+        # Site bu is tarafindan acildiysa dosyalari ve veritabanlari onunla gider.
+        try:
+            if rb.get("db"):
+                cp.delete_database(rb["db"])
+                job.log("  veritabani silindi: %s" % rb["db"])
+        except InstallError as exc:
+            job.log("  UYARI: veritabani silinemedi (%s): %s" % (rb["db"], exc))
+        try:
+            cp.delete_website(domain)
+            job.log("  site silindi: %s" % domain)
+        except InstallError as exc:
+            job.log("  UYARI: site silinemedi (%s): %s. CyberPanel'den silin." % (domain, exc))
+        return
+    if rb.get("db"):
+        try:
+            cp.delete_database(rb["db"])
+            job.log("  veritabani silindi: %s" % rb["db"])
+        except InstallError as exc:
+            job.log("  UYARI: veritabani silinemedi (%s): %s. CyberPanel > Databases'ten silin."
+                    % (rb["db"], exc))
+    for path in rb.get("data_dirs") or []:
+        shutil.rmtree(path, ignore_errors=True)
+        job.log("  veri dizini silindi: %s" % path)
+    if rb.get("docroot_dir"):
+        shutil.rmtree(rb["docroot_dir"], ignore_errors=True)
+        job.log("  dizin silindi: %s" % rb["docroot_dir"])
+    elif rb.get("docroot_clean") and os.path.isdir(rb["docroot_clean"]):
+        target = rb["docroot_clean"]
+        for name in os.listdir(target):
+            if name in KEEP_IN_DOCROOT:
+                continue
+            item = os.path.join(target, name)
+            if os.path.isdir(item) and not os.path.islink(item):
+                shutil.rmtree(item, ignore_errors=True)
+            else:
+                try:
+                    os.unlink(item)
+                except OSError:
+                    pass
+        job.log("  yazilan dosyalar temizlendi: %s" % target)
 
 
 def start_install(app_id, params):
@@ -711,6 +925,21 @@ def start_install(app_id, params):
     # bir mesajla reddedilir, bos yere "kurulum basladi" denmez.
     clean = validate_params(app, params)
     clean["overwrite"] = bool(params.get("overwrite"))
+    need = str((app.get("requires") or {}).get("php") or "")
+    if os.path.isdir(HOME_BASE + "/%s" % clean["domain"]):
+        # Mevcut site: uygulama sitenin KENDI PHP surumuyle calisir.
+        current = site_php_version(clean["domain"])
+        if current:
+            if need and _ver(current) < _ver(need):
+                raise InstallError(
+                    "%s PHP %s veya ustunu ister; %s su an PHP %s kullaniyor. "
+                    "CyberPanel > Websites > %s > PHP surumunu degistirin ya da "
+                    "uygulamayi yeni bir alt alan adina kurun."
+                    % (app["name"], need, clean["domain"], current, clean["domain"]))
+            clean["php"] = current
+    elif need and _ver(clean["php"]) < _ver(need):
+        clean["php"] = need          # yeni site: gereken surumle acilir
+    php_binary(clean["php"])         # o surum sunucuda var mi? yoksa simdi reddet
     limit = int(store.CFG.get("limits", "max_concurrent_jobs", default=2) or 2)
     with _run_lock:
         if RUNNING["count"] >= limit:
@@ -861,8 +1090,18 @@ def run_uninstall(job):
                 json.dump(record, fh, indent=2, ensure_ascii=False)
 
         # 2) dosyalar
+        protected = set()
+        if docroot == base:
+            # Ayni sitede alt dizine kurulmus baska uygulamalar varsa onlara dokunma.
+            for other in store.load_installs():
+                opath = (other.get("path") or "/").strip("/")
+                if other.get("domain") == domain and opath:
+                    protected.add(opath.split("/")[0])
+            if protected:
+                job.log("korunan alt dizin kurulumlari: %s" % ", ".join(sorted(protected)))
         if os.path.isdir(docroot):
-            names = [n for n in os.listdir(docroot) if not (docroot == base and n in KEEP_IN_DOCROOT)]
+            names = [n for n in os.listdir(docroot)
+                     if not (docroot == base and (n in KEEP_IN_DOCROOT or n in protected))]
             moved = 0
             if p["backup"]:
                 files_dir = os.path.join(trash, "files")
@@ -994,31 +1233,43 @@ def start_uninstall(params):
 # katalog dogrulama
 # ---------------------------------------------------------------------------
 
+def probe_url(url, timeout=20):
+    """Adres gercekten indirilebilir mi? Kurulumla ayni yolu (curl) kullanir."""
+    curl = shutil.which("curl")
+    if curl:
+        proc = subprocess.run(
+            [curl, "-sSL", "--proto", "=https", "--proto-redir", "=https", "-r", "0-1023",
+             "-o", os.devnull, "-w", "%{http_code}", "--max-time", str(timeout), url],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout + 15)
+        code = proc.stdout.decode("ascii", "replace").strip()
+        status = int(code) if code.isdigit() else 0
+        return 200 <= status < 300, status, proc.stderr.decode("utf-8", "replace").strip()[:200]
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 AGFO-App-Store/1.0",
+                                               "Range": "bytes=0-1023"})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return 200 <= resp.status < 300, resp.status, ""
+    except urllib.error.HTTPError as exc:
+        return False, exc.code, str(exc)
+    except Exception as exc:
+        return False, 0, str(exc)[:200]
+
+
 def verify_catalog(timeout=20):
-    """Her uygulamanin indirme adresini sunucudan yoklar."""
+    """Her uygulamanin indirme adresini sunucudan yoklar (GitHub son surumu dahil)."""
     results = []
     for item in catalog.load():
-        url = item["download"]["url"]
-        entry = {"id": item["id"], "name": item["name"], "url": url,
-                 "ok": False, "status": 0, "size": 0, "error": ""}
+        entry = {"id": item["id"], "name": item["name"], "url": item["download"].get("url", ""),
+                 "ok": False, "status": 0, "size": 0, "error": "", "version": ""}
         try:
-            req = urllib.request.Request(url, method="HEAD",
-                                         headers={"User-Agent": "AGFO-App-Store/1.0"})
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                entry["status"] = resp.status
-                entry["ok"] = 200 <= resp.status < 400
-                entry["size"] = int(resp.headers.get("Content-Length") or 0)
+            spec = resolve_download(item["download"], lambda m: None)
+            entry["url"] = spec["url"]
+            entry["version"] = spec.get("version", "")
+            entry["ok"], entry["status"], entry["error"] = probe_url(spec["url"], timeout)
+        except InstallError as exc:
+            entry["error"] = str(exc)[:200]
         except Exception as exc:
-            # Bazi sunucular HEAD kabul etmez; kucuk bir GET ile tekrar dene.
-            try:
-                req = urllib.request.Request(url, headers={"User-Agent": "AGFO-App-Store/1.0",
-                                                           "Range": "bytes=0-1023"})
-                with urllib.request.urlopen(req, timeout=timeout) as resp:
-                    entry["status"] = resp.status
-                    entry["ok"] = 200 <= resp.status < 400
-                    entry["size"] = int(resp.headers.get("Content-Range", "0/0").split("/")[-1] or 0)
-            except Exception as exc2:
-                entry["error"] = str(exc2)[:200]
+            entry["error"] = str(exc)[:200]
         results.append(entry)
     store.audit("catalog_verify", {"ok": sum(1 for r in results if r["ok"]),
                                    "total": len(results)})
