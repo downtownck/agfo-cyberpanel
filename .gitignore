@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.tmp
+config/config.json
+config/providers.json
+config/proposals.json
+config/audit.log
+config/tls/
+config/keys/

@@ -1,0 +1,44 @@
+{
+  "bind": "0.0.0.0",
+  "port": 8823,
+  "public_url": "",
+  "tls": {
+    "enabled": true,
+    "cert": "/etc/letsencrypt/live/alanadi.com/fullchain.pem",
+    "key": "/etc/letsencrypt/live/alanadi.com/privkey.pem"
+  },
+  "auth": {
+    "password_hash": "kurulum betigi doldurur",
+    "session_ttl": 43200
+  },
+  "allow_ips": [
+    "78.1.2.3"
+  ],
+  "frame_ancestors": [],
+  "cookie_samesite": "Strict",
+  "ai": {
+    "provider": "openai",
+    "model": "",
+    "max_events": 120,
+    "temperature": 0.1,
+    "timeout": 120,
+    "language": "tr"
+  },
+  "guard": {
+    "never_ban": [
+      "127.0.0.1",
+      "::1"
+    ],
+    "protect_private_ranges": true,
+    "max_ban_duration_hours": 720,
+    "require_approval": true
+  },
+  "report": {
+    "enabled": true,
+    "window_hours": 24
+  },
+  "crowdsec": {
+    "cscli": "",
+    "lapi_url": ""
+  }
+}

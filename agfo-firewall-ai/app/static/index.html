@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>AGFO Firewall AI</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<div id="login" class="overlay">
+  <form id="login-form" class="card" autocomplete="off">
+    <div class="brand"><span class="brand-mark">AGFO</span><span class="brand-rest">Firewall AI</span></div>
+    <p class="muted">CrowdSec yönetim paneli. Panel şifrenizi girin.</p>
+    <label for="login-pass">Panel şifresi</label>
+    <input id="login-pass" type="password" autocomplete="current-password" required>
+    <button type="submit" class="btn primary block">Giriş</button>
+    <div id="login-error" class="error" hidden></div>
+    <div class="login-foot muted" id="login-foot"></div>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header class="topbar">
+    <div class="brand small"><span class="brand-mark">AGFO</span><span class="brand-rest">Firewall AI</span></div>
+    <div id="cs-badges" class="badges"></div>
+    <div class="spacer"></div>
+    <span id="host-chip" class="host-chip"></span>
+    <button class="btn ghost" id="btn-refresh" title="Yenile">Yenile</button>
+    <button class="btn ghost" id="btn-logout">Çıkış</button>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="overview">Durum</button>
+    <button class="tab" data-tab="ai">AI Analizi</button>
+    <button class="tab" data-tab="decisions">Kararlar</button>
+    <button class="tab" data-tab="providers">Sağlayıcılar</button>
+    <button class="tab" data-tab="settings">Ayarlar</button>
+    <button class="tab" data-tab="audit">Denetim</button>
+  </nav>
+
+  <main class="content">
+
+    <!-- ===================== DURUM ===================== -->
+    <section class="pane active" id="pane-overview">
+      <div class="toolbar">
+        <label for="ov-window">Pencere</label>
+        <select id="ov-window" class="select">
+          <option value="6h">son 6 saat</option>
+          <option value="24h" selected>son 24 saat</option>
+          <option value="72h">son 3 gün</option>
+          <option value="168h">son 7 gün</option>
+        </select>
+        <span class="spacer"></span>
+        <span id="ov-updated" class="muted"></span>
+      </div>
+
+      <div id="cs-missing" class="notice" hidden>
+        <b>CrowdSec bulunamadı.</b>
+        <p class="muted">Kurulum paketini <code>bash install.sh</code> ile çalıştırdıysanız CrowdSec kurulmuş olmalı. Durumu kontrol edin: <code>systemctl status crowdsec</code></p>
+      </div>
+
+      <div class="cards" id="ov-cards"></div>
+
+      <div class="grid2">
+        <div class="panel">
+          <h3>Saldırı senaryoları</h3>
+          <div id="ov-scenarios" class="bars"></div>
+        </div>
+        <div class="panel">
+          <h3>Ülkeler</h3>
+          <div id="ov-countries" class="bars"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>En çok uyarı üreten adresler</h3>
+        <div class="table-wrap">
+          <table class="tbl" id="ov-ips">
+            <thead><tr>
+              <th>IP</th><th>Ülke</th><th>Ağ (AS)</th><th class="num">Uyarı</th><th class="num">Olay</th>
+              <th>Senaryolar</th><th>Durum</th><th></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== AI ===================== -->
+    <section class="pane" id="pane-ai">
+      <div class="panel">
+        <h3>Olayları AI ile yorumla</h3>
+        <p class="muted">AI yalnızca <b>öneri</b> üretir. Hiçbir kural sizin onayınız olmadan uygulanmaz.</p>
+        <div class="row three">
+          <div>
+            <label for="ai-window">Pencere</label>
+            <select id="ai-window" class="select">
+              <option value="6h">son 6 saat</option>
+              <option value="24h" selected>son 24 saat</option>
+              <option value="72h">son 3 gün</option>
+              <option value="168h">son 7 gün</option>
+            </select>
+          </div>
+          <div>
+            <label for="ai-provider">Sağlayıcı</label>
+            <select id="ai-provider" class="select"></select>
+          </div>
+          <div>
+            <label for="ai-model">Model</label>
+            <input id="ai-model" type="text" placeholder="(sağlayıcı varsayılanı)" spellcheck="false">
+          </div>
+        </div>
+        <div class="row">
+          <label for="ai-note">Analiste not (isteğe bağlı)</label>
+          <input id="ai-note" type="text" placeholder="örn. 78.1.2.3 bizim ofis, engelleme" spellcheck="false">
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="btn-analyze">Analiz et</button>
+          <span id="ai-status" class="muted"></span>
+        </div>
+        <div id="ai-error" class="error" hidden></div>
+      </div>
+
+      <div class="panel" id="ai-result" hidden>
+        <div class="result-head">
+          <h3>Analiz</h3>
+          <span id="ai-risk" class="pill"></span>
+          <span class="spacer"></span>
+          <span id="ai-meta" class="muted"></span>
+        </div>
+        <p id="ai-summary"></p>
+        <div id="ai-findings"></div>
+      </div>
+
+      <div class="panel">
+        <div class="result-head">
+          <h3>Öneriler</h3>
+          <span class="spacer"></span>
+          <label class="check"><input type="checkbox" id="prop-pending-only" checked> yalnızca bekleyenler</label>
+        </div>
+        <div id="proposals" class="proposals"></div>
+      </div>
+    </section>
+
+    <!-- ===================== KARARLAR ===================== -->
+    <section class="pane" id="pane-decisions">
+      <div class="panel">
+        <h3>Elle engelle</h3>
+        <div class="row three">
+          <div>
+            <label for="man-value">IP veya CIDR</label>
+            <input id="man-value" type="text" placeholder="203.0.113.5 veya 203.0.113.0/24" spellcheck="false">
+          </div>
+          <div>
+            <label for="man-duration">Süre</label>
+            <input id="man-duration" type="text" value="4h" spellcheck="false">
+          </div>
+          <div>
+            <label for="man-reason">Sebep</label>
+            <input id="man-reason" type="text" value="panel" spellcheck="false">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn danger" id="btn-ban">Engelle</button>
+        </div>
+        <div id="man-error" class="error" hidden></div>
+      </div>
+
+      <div class="panel">
+        <div class="result-head">
+          <h3>Etkin kararlar</h3>
+          <span class="spacer"></span>
+          <input id="dec-filter" type="text" class="filter" placeholder="filtrele…" spellcheck="false">
+        </div>
+        <div class="table-wrap">
+          <table class="tbl" id="dec-table">
+            <thead><tr>
+              <th>Değer</th><th>Tür</th><th>Sebep</th><th>Kaynak</th><th>Bitiş</th><th>Ülke</th><th></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Kurulu koleksiyonlar</h3>
+        <div id="collections" class="chips"></div>
+      </div>
+    </section>
+
+    <!-- ===================== SAĞLAYICILAR ===================== -->
+    <section class="pane" id="pane-providers">
+      <div class="panel">
+        <h3>API anahtarları</h3>
+        <p class="muted">Anahtarlar sunucuda <code>config/providers.json</code> dosyasında 0600 izniyle saklanır, panele bir daha geri gönderilmez.</p>
+        <div id="provider-list" class="provider-list"></div>
+        <div id="prov-error" class="error" hidden></div>
+      </div>
+    </section>
+
+    <!-- ===================== AYARLAR ===================== -->
+    <section class="pane" id="pane-settings">
+      <div class="panel">
+        <h3>Koruma</h3>
+        <p class="muted">Buradaki adresler hiçbir koşulda engellenemez — AI önerse bile reddedilir.</p>
+        <div class="row">
+          <label for="never-ban">Korumalı adresler (her satıra bir IP veya CIDR)</label>
+          <textarea id="never-ban" rows="5" spellcheck="false"></textarea>
+        </div>
+        <label class="check"><input type="checkbox" id="protect-private"> Özel/yerel ağ aralıklarını da koru</label>
+        <div class="btn-row"><button class="btn primary" id="btn-save-guard">Kaydet</button></div>
+        <div id="guard-msg" class="error" hidden></div>
+      </div>
+
+      <div class="panel">
+        <h3>Panel şifresi</h3>
+        <div class="row two">
+          <div><label for="pw-current">Mevcut şifre</label><input id="pw-current" type="password" autocomplete="current-password"></div>
+          <div><label for="pw-new">Yeni şifre (en az 10 karakter)</label><input id="pw-new" type="password" autocomplete="new-password"></div>
+        </div>
+        <div class="btn-row"><button class="btn primary" id="btn-pw">Güncelle</button></div>
+        <div id="pw-msg" class="error" hidden></div>
+      </div>
+
+      <div class="panel">
+        <h3>Sistem</h3>
+        <div id="sys-info" class="info-grid"></div>
+      </div>
+    </section>
+
+    <!-- ===================== DENETİM ===================== -->
+    <section class="pane" id="pane-audit">
+      <div class="panel">
+        <h3>Denetim günlüğü</h3>
+        <p class="muted">Panelden yapılan her işlem buraya yazılır.</p>
+        <div class="table-wrap">
+          <table class="tbl" id="audit-table">
+            <thead><tr><th>Zaman</th><th>İşlem</th><th>Ayrıntı</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+  <div id="toast" class="toast" hidden></div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

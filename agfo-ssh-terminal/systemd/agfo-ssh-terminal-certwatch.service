@@ -1,0 +1,7 @@
+[Unit]
+Description=AGFO SSH Terminal sertifika yenileme denetimi
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=@INSTALL_DIR@/app/certwatch.sh

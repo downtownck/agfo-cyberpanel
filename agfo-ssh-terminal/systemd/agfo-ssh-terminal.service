@@ -1,0 +1,32 @@
+[Unit]
+Description=AGFO SSH Terminal (web tabanli root terminali)
+Documentation=file:@INSTALL_DIR@/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Panelin amaci sunucuya root erisimi vermektir: servis root olarak calisir ve
+# PTY/alt surec acabilmesi icin kasitli olarak sandbox uygulanmaz.
+User=root
+Group=root
+WorkingDirectory=@INSTALL_DIR@
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=LANG=C.UTF-8
+Environment=LC_ALL=C.UTF-8
+Environment=HOME=/root
+Environment=TERM=xterm-256color
+ExecStart=@PYBIN@ @INSTALL_DIR@/app/server.py
+Restart=always
+RestartSec=3
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=15
+LimitNOFILE=16384
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agfo-ssh-terminal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,39 @@
+{
+  "bind": "0.0.0.0",
+  "port": 8822,
+  "tls": {
+    "enabled": true,
+    "cert": "/opt/agfo-ssh-terminal/config/tls/server.crt",
+    "key": "/opt/agfo-ssh-terminal/config/tls/server.key"
+  },
+  "auth": {
+    "password_hash": "kurulum betigi tarafindan doldurulur",
+    "session_ttl": 43200
+  },
+  "allow_ips": [],
+  "frame_ancestors": [
+    "https://62.83.69.214:8090"
+  ],
+  "cookie_samesite": "Strict",
+  "limits": {
+    "max_sessions": 24,
+    "max_key_upload_kb": 64,
+    "idle_timeout": 0,
+    "login_max_fail": 6,
+    "login_lock_seconds": 900
+  },
+  "session_log": {
+    "enabled": false,
+    "dir": "/var/log/agfo-ssh-terminal/sessions"
+  },
+  "defaults": {
+    "term": "xterm-256color",
+    "keepalive": 30,
+    "connect_timeout": 15,
+    "host_key_policy": "accept-new",
+    "local_shell": "",
+    "scrollback": 5000,
+    "font_size": 14,
+    "theme": "agfo-dark"
+  }
+}

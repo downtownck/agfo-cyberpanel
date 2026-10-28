@@ -1,0 +1,10 @@
+[Unit]
+Description=AGFO Firewall AI sertifika yenileme denetimi (gunluk)
+
+[Timer]
+OnCalendar=*-*-* 03:41:00
+RandomizedDelaySec=900
+Persistent=true
+
+[Install]
+WantedBy=timers.target

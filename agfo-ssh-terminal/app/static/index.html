@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>AGFO SSH Terminal</title>
+<link rel="stylesheet" href="/static/vendor/xterm.css">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+
+<!-- ======================= GIRIS EKRANI ======================= -->
+<div id="login" class="overlay">
+  <form id="login-form" class="card" autocomplete="off">
+    <div class="brand">
+      <span class="brand-mark">AGFO</span>
+      <span class="brand-rest">SSH Terminal</span>
+    </div>
+    <p class="muted">Bu panel sunucuya <strong>root</strong> erişimi verir. Panel şifrenizi girin.</p>
+    <label for="login-pass">Panel şifresi</label>
+    <input id="login-pass" type="password" autocomplete="current-password" required>
+    <button type="submit" class="btn primary block">Giriş</button>
+    <div id="login-error" class="error" hidden></div>
+    <div class="login-foot muted" id="login-foot"></div>
+  </form>
+</div>
+
+<!-- ======================= UYGULAMA ======================= -->
+<div id="app" hidden>
+
+  <header class="topbar">
+    <div class="brand small">
+      <span class="brand-mark">AGFO</span>
+      <span class="brand-rest">SSH Terminal</span>
+    </div>
+    <div class="host-chip" id="host-chip"></div>
+    <div class="spacer"></div>
+    <div class="topbar-actions">
+      <button class="btn ghost" id="btn-root-shell" title="Sunucunun kendisinde root kabuğu (Ctrl+Shift+L)">Root kabuğu</button>
+      <button class="btn ghost" id="btn-root-ssh" title="root@127.0.0.1 SSH">root@localhost</button>
+      <select id="theme-select" class="select" title="Renk teması" aria-label="Renk teması">
+        <option value="agfo-dark">AGFO Koyu</option>
+        <option value="putty-classic">PuTTY Klasik</option>
+        <option value="solarized-dark">Solarized Koyu</option>
+        <option value="matrix">Yeşil Fosfor</option>
+        <option value="light">Aydınlık</option>
+      </select>
+      <div class="fontctl" role="group" aria-label="Yazı boyutu">
+        <button class="btn ghost icon" id="btn-font-down" title="Yazıyı küçült">A-</button>
+        <span id="font-size-label">14</span>
+        <button class="btn ghost icon" id="btn-font-up" title="Yazıyı büyüt">A+</button>
+      </div>
+      <button class="btn ghost" id="btn-keys" title="SSH özel anahtarları">Anahtarlar</button>
+      <button class="btn ghost" id="btn-settings" title="Ayarlar">Ayarlar</button>
+      <button class="btn ghost" id="btn-logout" title="Çıkış">Çıkış</button>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ---------------- SOL PANEL ---------------- -->
+    <aside class="sidebar" id="sidebar">
+      <div class="side-section">
+        <div class="side-title">
+          <span>Kayıtlı oturumlar</span>
+          <button class="btn ghost icon" id="btn-new-profile" title="Formu temizle">+</button>
+        </div>
+        <ul id="profile-list" class="profile-list"></ul>
+      </div>
+
+      <div class="side-section grow">
+        <div class="side-title"><span>Bağlantı</span></div>
+        <form id="conn-form" autocomplete="off">
+          <div class="row">
+            <label for="f-mode">Tür</label>
+            <select id="f-mode" class="select">
+              <option value="ssh">SSH (uzak sunucu)</option>
+              <option value="local">Yerel kabuk (bu sunucu, root)</option>
+            </select>
+          </div>
+
+          <div class="ssh-only">
+            <div class="row two">
+              <div>
+                <label for="f-host">Host / IP</label>
+                <input id="f-host" type="text" placeholder="10.0.0.5 veya sunucu.alanadi.com" spellcheck="false">
+              </div>
+              <div class="narrow">
+                <label for="f-port">Port</label>
+                <input id="f-port" type="number" min="1" max="65535" value="22">
+              </div>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label for="f-user">Kullanıcı</label>
+                <input id="f-user" type="text" value="root" spellcheck="false">
+              </div>
+              <div>
+                <label for="f-identity">Özel anahtar</label>
+                <select id="f-identity" class="select">
+                  <option value="">(yok / şifre ile)</option>
+                </select>
+              </div>
+            </div>
+
+            <details class="advanced">
+              <summary>Gelişmiş</summary>
+              <div class="row">
+                <label for="f-jump">Atlama sunucusu (ProxyJump)</label>
+                <input id="f-jump" type="text" placeholder="kullanici@bastion:22" spellcheck="false">
+              </div>
+              <div class="row">
+                <label for="f-extra">Ek ssh seçenekleri</label>
+                <input id="f-extra" type="text" placeholder="-o Ciphers=aes256-gcm@openssh.com -C" spellcheck="false">
+                <small class="muted">Yalnızca <code>-o Anahtar=Deger</code> ve <code>-C -4 -6 -A -q</code> kabul edilir.</small>
+              </div>
+              <div class="row">
+                <label for="f-command">Bağlantıda çalıştır (uzak komut)</label>
+                <input id="f-command" type="text" placeholder="örn. tail -f /var/log/messages" spellcheck="false">
+              </div>
+              <div class="row two">
+                <div>
+                  <label for="f-keepalive">Canlı tutma (sn)</label>
+                  <input id="f-keepalive" type="number" min="0" max="600" value="30">
+                </div>
+                <div>
+                  <label for="f-policy">Host key</label>
+                  <select id="f-policy" class="select">
+                    <option value="accept-new">İlk seferde kabul et</option>
+                    <option value="yes">Katı (bilinmiyorsa reddet)</option>
+                    <option value="no">Sorma (güvensiz)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row checks">
+                <label class="check"><input type="checkbox" id="f-agent"> ssh-agent kullan</label>
+                <label class="check"><input type="checkbox" id="f-compression"> Sıkıştırma (-C)</label>
+                <label class="check"><input type="checkbox" id="f-log"> Oturumu sunucuya kaydet</label>
+              </div>
+            </details>
+          </div>
+
+          <div class="row">
+            <label for="f-name">Oturum adı (kaydetmek için)</label>
+            <input id="f-name" type="text" placeholder="örn. Hetzner root" maxlength="64">
+          </div>
+
+          <div class="btn-row">
+            <button type="submit" class="btn primary">Bağlan</button>
+            <button type="button" class="btn" id="btn-save-profile">Kaydet</button>
+            <button type="button" class="btn danger-ghost" id="btn-delete-profile" hidden>Sil</button>
+          </div>
+          <div id="conn-error" class="error" hidden></div>
+        </form>
+      </div>
+    </aside>
+
+    <!-- ---------------- TERMINAL ALANI ---------------- -->
+    <main class="main">
+      <div class="tabbar" id="tabbar">
+        <div class="tabs" id="tabs"></div>
+        <button class="btn ghost icon" id="btn-sidebar" title="Paneli göster/gizle">&#9776;</button>
+      </div>
+
+      <div class="search-bar" id="search-bar" hidden>
+        <input id="search-input" type="text" placeholder="Terminalde ara…" spellcheck="false">
+        <button class="btn ghost icon" id="search-prev" title="Önceki">&#8593;</button>
+        <button class="btn ghost icon" id="search-next" title="Sonraki">&#8595;</button>
+        <button class="btn ghost icon" id="search-close" title="Kapat">&#10005;</button>
+      </div>
+
+      <div id="terminals" class="terminals"></div>
+
+      <div id="empty-state" class="empty">
+        <div class="empty-inner">
+          <h2>Bağlantı yok</h2>
+          <p class="muted">Soldan bir oturum seçin, yeni bağlantı kurun ya da doğrudan sunucunun root kabuğunu açın.</p>
+          <div class="btn-row center">
+            <button class="btn primary" id="empty-root-shell">Root kabuğu aç</button>
+            <button class="btn" id="empty-root-ssh">root@localhost</button>
+          </div>
+          <p class="kbd-help muted">
+            <span><b>Ctrl+Shift+C/V</b> kopyala / yapıştır</span>
+          <span><b>Shift+Insert</b> yapıştır</span>
+            <span><b>Ctrl+Shift+F</b> ara</span>
+            <span><b>Ctrl+Shift+L</b> root kabuğu</span>
+            <span><b>Ctrl+Shift+W</b> sekmeyi kapat</span>
+            <span><b>Alt+1…9</b> sekme değiştir</span>
+          </p>
+        </div>
+      </div>
+
+      <footer class="statusbar">
+        <span id="st-state" class="pill">hazır</span>
+        <span id="st-target" class="muted"></span>
+        <span class="spacer"></span>
+        <span id="st-size" class="muted"></span>
+        <span id="st-bytes" class="muted"></span>
+        <span id="st-latency" class="muted"></span>
+        <button class="btn ghost" id="btn-reconnect" title="Bu sekmeyi aynı ayarlarla yeniden bağla" hidden>Yeniden bağlan</button>
+        <button class="btn ghost icon" id="btn-dl-log" title="Bu sekmenin çıktısını indir">&#8681;</button>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<!-- ======================= ANAHTAR YONETICISI ======================= -->
+<div id="keys-modal" class="overlay" hidden>
+  <div class="card wide">
+    <div class="card-head">
+      <h3>SSH özel anahtarları</h3>
+      <button class="btn ghost icon" data-close="keys-modal">&#10005;</button>
+    </div>
+    <p class="muted">Anahtarlar sunucuda <code>config/keys/</code> altında 0600 izniyle tutulur.</p>
+    <ul id="keys-list" class="keys-list"></ul>
+    <div class="row">
+      <label for="key-name">Dosya adı</label>
+      <input id="key-name" type="text" placeholder="hetzner_ed25519" spellcheck="false">
+    </div>
+    <div class="row">
+      <label for="key-content">Özel anahtar içeriği</label>
+      <textarea id="key-content" rows="7" spellcheck="false" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" id="btn-key-upload">Yükle</button>
+      <label class="btn" for="key-file">Dosyadan seç</label>
+      <input id="key-file" type="file" hidden>
+    </div>
+    <div id="keys-error" class="error" hidden></div>
+  </div>
+</div>
+
+<!-- ======================= AYARLAR ======================= -->
+<div id="settings-modal" class="overlay" hidden>
+  <div class="card">
+    <div class="card-head">
+      <h3>Ayarlar</h3>
+      <button class="btn ghost icon" data-close="settings-modal">&#10005;</button>
+    </div>
+    <div id="settings-info" class="info-grid"></div>
+    <h4>Panel şifresini değiştir</h4>
+    <div class="row">
+      <label for="pw-current">Mevcut şifre</label>
+      <input id="pw-current" type="password" autocomplete="current-password">
+    </div>
+    <div class="row">
+      <label for="pw-new">Yeni şifre (en az 10 karakter)</label>
+      <input id="pw-new" type="password" autocomplete="new-password">
+    </div>
+    <div class="btn-row">
+      <button class="btn primary" id="btn-pw-save">Güncelle</button>
+    </div>
+    <div id="settings-msg" class="error" hidden></div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="/static/vendor/xterm.js"></script>
+<script src="/static/vendor/addon-fit.js"></script>
+<script src="/static/vendor/addon-web-links.js"></script>
+<script src="/static/vendor/addon-search.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
