@@ -7,3 +7,4 @@ config/proposals.json
 config/audit.log
 config/tls/
 config/keys/
+dist/

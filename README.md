@@ -60,3 +60,22 @@ cat /opt/agfo-firewall-ai/VERSION
 
 Yükseltmek için ilgili klasörü indirip `install.sh`'i yeniden çalıştırmak
 yeterlidir.
+
+### Runner'a yüklenecek ZIP'ler
+
+```bash
+bash tools/make-packages.sh    # dist/agfo-<arac>-<surum>.zip üretir
+```
+
+Her ZIP'in kökünde `install.sh` bulunur, yani doğrudan Package Runner'a
+yüklenebilir.
+
+Bir sürüm etiketi gönderildiğinde bu paketler GitHub Releases'e otomatik
+eklenir:
+
+```bash
+git tag v2026.10.28 && git push origin v2026.10.28
+```
+
+Böylece sunucuya kurulan sürümü Releases sayfasındakiyle karşılaştırarak
+güncelliği takip edebilirsiniz.

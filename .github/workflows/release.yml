@@ -1,0 +1,36 @@
+# Bir sürüm etiketi gönderildiğinde (örn. git tag v2026.10.28) her aracın
+# ZIP'ini üretip GitHub Releases'e ekler. Runner'a oradan indirip yükleyin.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Paketleri üret
+        run: bash tools/make-packages.sh
+      - name: Sürüm notunu hazırla
+        run: |
+          {
+            echo "Her araç kendi ZIP'inde; AGFO Package Runner'a yükleyip \`bash install.sh\` çalıştırın."
+            echo
+            echo "| Araç | Sürüm |"
+            echo "|---|---|"
+            for d in agfo-*/; do
+              [ -f "$d/install.sh" ] || continue
+              echo "| ${d%/} | $(cat "$d/VERSION" 2>/dev/null || echo '-') |"
+            done
+          } > release-notes.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          body_path: release-notes.md
+          generate_release_notes: true
