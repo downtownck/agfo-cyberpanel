@@ -1,0 +1,41 @@
+{
+  "id": "mybb",
+  "name": "MyBB",
+  "badge": "MB",
+  "category": "forum",
+  "tagline": "Ücretsiz, eklenti zengini forum yazılımı",
+  "description": "Topluluk ve destek forumları için. Kurulum sihirbazı veritabanı bilgilerini ister.",
+  "homepage": "https://mybb.com",
+  "license": "LGPL-3.0",
+  "install_mode": "web",
+  "tags": [
+    "forum",
+    "topluluk"
+  ],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "github": "mybb/mybb",
+    "asset": "^mybb_\\d{4}\\.zip$",
+    "format": "zip",
+    "strip": 0,
+    "only": "Upload"
+  },
+  "fields": [],
+  "steps": [
+    {
+      "copy": {
+        "from": "inc/config.default.php",
+        "to": "inc/config.php",
+        "optional": true
+      }
+    }
+  ],
+  "finish": {
+    "path": "/install/",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm"
+}

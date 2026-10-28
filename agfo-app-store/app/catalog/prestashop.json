@@ -1,0 +1,35 @@
+{
+  "id": "prestashop",
+  "name": "PrestaShop",
+  "badge": "PS",
+  "category": "shop",
+  "tagline": "Kapsamlı açık kaynak e-ticaret",
+  "description": "Büyük kataloglar ve çok dilli mağazalar. Açılış sayfası paketi tarayıcıda açar, ardından kurulum sihirbazı gelir.",
+  "homepage": "https://www.prestashop-project.org",
+  "license": "OSL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "intl",
+      "zip",
+      "gd",
+      "curl",
+      "mbstring"
+    ]
+  },
+  "download": {
+    "url": "https://assets.prestashop3.com/dst/edition/corporate/9.0.0-1.0/prestashop_edition_classic_version_9.0.0-1.0.zip?source=agfo-app-store",
+    "format": "zip",
+    "strip": 0
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/index.php",
+    "note": "Açılan sayfa paketi açıp kurulum sihirbazına geçer. Kurulumdan sonra install/ klasörünü silin; yönetim klasörü yeniden adlandırılır."
+  },
+  "database": true,
+  "version_note": "9.0 (resmi otomasyon paketi)"
+}

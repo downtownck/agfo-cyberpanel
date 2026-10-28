@@ -1,0 +1,36 @@
+{
+  "id": "lychee",
+  "name": "Lychee",
+  "badge": "LY",
+  "category": "files",
+  "tagline": "Şık fotoğraf galerisi",
+  "description": "Albümler, paylaşım ve EXIF bilgileri. PHP 8.4 ister.",
+  "homepage": "https://lycheeorg.dev",
+  "license": "MIT",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.4",
+    "extensions": [
+      "gd",
+      "exif",
+      "bcmath",
+      "intl"
+    ]
+  },
+  "download": {
+    "github": "LycheeOrg/Lychee",
+    "asset": "^Lychee\\.zip$",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/install",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm · PHP 8.4+",
+  "web_root": "public"
+}

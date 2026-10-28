@@ -1,0 +1,35 @@
+{
+  "id": "e107",
+  "name": "e107",
+  "badge": "E7",
+  "category": "cms",
+  "tagline": "Eklenti zengini topluluk CMS'i",
+  "description": "Haber, forum ve üyelik özellikli topluluk siteleri.",
+  "homepage": "https://e107.org",
+  "license": "GPL-2.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "url": "https://github.com/e107inc/e107/archive/refs/tags/v2.3.13.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [
+    {
+      "delete": "e107_tests"
+    }
+  ],
+  "finish": {
+    "path": "/install.php",
+    "note": "Kurulum bitince install.php dosyasını silin."
+  },
+  "database": true,
+  "version_note": "2.3.13",
+  "deny": [
+    "e107_system"
+  ]
+}

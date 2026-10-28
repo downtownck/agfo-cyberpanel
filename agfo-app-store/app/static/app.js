@@ -76,6 +76,8 @@
       box.appendChild(el('h4', '', app.name));
       box.appendChild(el('div', 'cat', app.category_label || ''));
       head.appendChild(tile); head.appendChild(box);
+      var hb = healthBadge(app.health); hb.title = app.health_detail || '';
+      head.appendChild(hb);
       card.appendChild(head);
       card.appendChild(el('div', 'tag', app.tagline || ''));
       var foot = el('div', 'appcard-foot');
@@ -148,11 +150,12 @@
   /* ---------------- iş izleme ---------------- */
   function watchJob(jobId, title, kind) {
     var removing = kind === 'uninstall';
+    var checking = kind === 'health';
     $('jm-title').textContent = title || 'Kurulum';
     $('jm-log').textContent = '';
     $('jm-result').hidden = true;
     $('jm-result').innerHTML = '';
-    $('jm-status').textContent = removing ? 'kaldırılıyor' : 'kuruluyor'; $('jm-status').className = 'pill busy';
+    $('jm-status').textContent = checking ? 'test ediliyor' : (removing ? 'kaldırılıyor' : 'kuruluyor'); $('jm-status').className = 'pill busy';
     $('job-modal').hidden = false;
     var offset = 0;
     clearInterval(POLL);
@@ -168,7 +171,13 @@
         if (st === 'done') {
           clearInterval(POLL);
           $('jm-status').textContent = 'tamamlandı'; $('jm-status').className = 'pill ok';
-          if (removing || (res.job.result || {}).kind === 'uninstall') renderUninstallResult(res.job.result || {});
+          if (checking || (res.job.result || {}).kind === 'health') {
+            var r = res.job.result || {}; var box = $('jm-result'); box.hidden = false; box.innerHTML = '';
+            box.appendChild(el('h4', '', 'Test bitti'));
+            box.appendChild(el('div', '', (r.ok || 0) + ' sorunsuz · ' + (r.warn || 0) + ' uyarılı · ' + (r.fail || 0) + ' başarısız'));
+            api('/api/catalog').then(function (c) { APPS = c.apps || APPS; renderGrid(); loadHealth(); });
+          }
+          else if (removing || (res.job.result || {}).kind === 'uninstall') renderUninstallResult(res.job.result || {});
           else renderResult(res.job.result || {});
           loadInstalls();
         } else if (st === 'error') {
@@ -221,6 +230,57 @@
     row.appendChild(open);
     box.appendChild(row);
     box.appendChild(el('div', 'muted', 'Şifreler bu ekranda bir kez gösterilir; kaydedin.'));
+  }
+
+  /* ---------------- saglik testi ---------------- */
+  var HB = { verified: '✓ doğrulandı', package_ok: 'paket tamam', warn: 'uyarılı', fail: 'sorunlu', untested: 'denenmedi' };
+  function healthBadge(state) { return el('span', 'hbadge ' + (state || 'untested'), HB[state || 'untested']); }
+  function layerPill(r) {
+    if (!r || !r.status) return el('span', 'muted', '–');
+    var map = { ok: ['tamam', 'ok'], warn: ['uyarı', 'busy'], fail: ['hata', 'bad'], skip: ['atlandı', ''] };
+    var info = map[r.status] || [r.status, ''];
+    var p = el('span', 'pill ' + info[1], info[0]);
+    p.title = new Date((r.tested || 0) * 1000).toLocaleString('tr-TR');
+    return p;
+  }
+  function loadHealth() {
+    api('/api/health').then(function (res) {
+      $('health-domain').value = res.test_domain || '';
+      $('health-php').textContent = 'Kurulu PHP: ' + ((res.php || []).join(', ') || '?');
+      var rep = res.report || {};
+      var tb = $('health-table').querySelector('tbody'); tb.innerHTML = '';
+      APPS.slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'tr'); }).forEach(function (app) {
+        var e = rep[app.id] || {};
+        var tr = el('tr');
+        tr.appendChild(el('td', '', app.name));
+        var tp = el('td'); tp.appendChild(layerPill(e.package)); tr.appendChild(tp);
+        var tt = el('td'); tt.appendChild(layerPill(e.trial)); tr.appendChild(tt);
+        var det = '';
+        if (e.trial && e.trial.detail) det = e.trial.detail;
+        else if (e.package) {
+          var bad = (e.package.checks || []).filter(function (c) { return c.level !== 'ok'; }).map(function (c) { return c.text; });
+          det = bad.length ? bad.join(' · ') : ('sürüm ' + (e.package.version || '?') + ' · ' + e.package.size_mb + ' MB');
+        }
+        tr.appendChild(el('td', 'det', det));
+        var act = el('td'); var box = el('div', 'tool-actions');
+        var b1 = el('button', 'btn small', 'Paket'); b1.addEventListener('click', function () { runHealth('package', [app.id]); });
+        var b2 = el('button', 'btn small', 'Dene'); b2.addEventListener('click', function () { runHealth('trial', [app.id]); });
+        box.appendChild(b1); box.appendChild(b2);
+        var failed = (e.package && e.package.status === 'fail') || (e.trial && e.trial.status === 'fail');
+        if (failed && aiReady()) {
+          var b3 = el('button', 'btn small', "AI'ya sor");
+          b3.addEventListener('click', function () { repairApp(app.id); });
+          box.appendChild(b3);
+        }
+        act.appendChild(box); tr.appendChild(act); tb.appendChild(tr);
+      });
+    }).catch(function (err) { toast(err.message, 6000); });
+  }
+  function runHealth(mode, ids) {
+    if (mode === 'trial' && !ids && !confirm('Tüm uygulamalar test sitesine tek tek kurulup kaldırılacak. Bu uzun sürer ve bant genişliği kullanır. Başlatılsın mı?')) return;
+    api('/api/health/start', { mode: mode, apps: ids || [] }).then(function (res) {
+      watchJob(res.job, mode === 'package' ? 'Paket testi' : 'Deneme kurulumu', 'health');
+    }).catch(function (err) { toast(err.message, 7000); });
   }
 
   /* ---------------- AI ---------------- */
@@ -613,6 +673,12 @@
     $('im-start').addEventListener('click', startInstall);
     $('um-start').addEventListener('click', startUninstall);
     $('tr-start').addEventListener('click', startToolRemove);
+    $('btn-health-package').addEventListener('click', function () { runHealth('package'); });
+    $('btn-health-trial').addEventListener('click', function () { runHealth('trial'); });
+    $('btn-health-domain').addEventListener('click', function () {
+      api('/api/health/test-domain', { domain: $('health-domain').value.trim() })
+        .then(function () { toast('Test alan adı kaydedildi'); }).catch(function (e) { toast(e.message, 6000); });
+    });
     $('tr-confirm').addEventListener('input', function () {
       $('tr-start').disabled = !TOOL_RM || this.value.trim() !== TOOL_RM.slug;
     });
@@ -668,7 +734,7 @@
         if (tab.dataset.tab === 'jobs') loadJobs();
         if (tab.dataset.tab === 'installed') loadInstalls();
         if (tab.dataset.tab === 'tools') loadTools();
-        if (tab.dataset.tab === 'settings') { loadAI(); loadOverrides(); }
+        if (tab.dataset.tab === 'settings') { loadAI(); loadOverrides(); loadHealth(); }
       });
     });
     document.addEventListener('keydown', function (ev) {

@@ -1,0 +1,40 @@
+{
+  "id": "phplist",
+  "name": "phpList",
+  "badge": "PL",
+  "category": "mail",
+  "tagline": "E-posta bülteni ve liste yönetimi",
+  "description": "Abone listeleri, kampanyalar ve gönderim kuyruğu.",
+  "homepage": "https://www.phplist.org",
+  "license": "AGPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "url": "https://sourceforge.net/projects/phplist/files/phplist/3.7.0/phplist-3.7.0.tgz/download",
+    "format": "tgz",
+    "strip": 1,
+    "only": "public_html"
+  },
+  "fields": [],
+  "steps": [
+    {
+      "write": {
+        "path": "lists/config/config.php",
+        "mode": "0640",
+        "content": "<?php\n$database_host = '{db_host}';\n$database_name = '{db_name}';\n$database_user = '{db_user}';\n$database_password = '{db_pass}';\n$table_prefix = 'phplist_';\n$usertable_prefix = 'phplist_user_';\n$pageroot = '{path_slash}lists';\n$adminpages = '{path_slash}lists/admin';\ndefine('TEST', 0);\ndefine('PHPMAILERHOST', '');\n$bounce_protocol = 'pop';\ndefine('MANUALLY_PROCESS_BOUNCES', 1);\ndefine('MANUALLY_PROCESS_QUEUE', 1);\n"
+      }
+    }
+  ],
+  "finish": {
+    "path": "/lists/admin/",
+    "note": "Veritabanı ayarları yazıldı; açılan sayfada tabloları oluşturun ve yönetici hesabını tanımlayın. Kuyruk için cron önerilir."
+  },
+  "database": true,
+  "version_note": "3.7.0",
+  "deny": [
+    "lists/config"
+  ]
+}

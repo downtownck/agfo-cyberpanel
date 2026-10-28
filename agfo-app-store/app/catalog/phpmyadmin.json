@@ -1,0 +1,51 @@
+{
+  "id": "phpmyadmin",
+  "name": "phpMyAdmin",
+  "badge": "PA",
+  "category": "tools",
+  "tagline": "Tarayıcıdan MariaDB/MySQL yönetimi",
+  "description": "CyberPanel veritabanı kullanıcılarıyla giriş yapılır. Kendi veritabanı yoktur.",
+  "homepage": "https://www.phpmyadmin.net",
+  "license": "GPL-2.0",
+  "install_mode": "cli",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "url": "https://www.phpmyadmin.net/downloads/phpMyAdmin-latest-all-languages.zip",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [
+    {
+      "write": {
+        "path": "config.inc.php",
+        "mode": "0640",
+        "content": "<?php\n$cfg['blowfish_secret'] = '{secret}';\n$i = 0;\n$i++;\n$cfg['Servers'][$i]['auth_type'] = 'cookie';\n$cfg['Servers'][$i]['host'] = '127.0.0.1';\n$cfg['Servers'][$i]['AllowNoPassword'] = false;\n$cfg['TempDir'] = __DIR__ . '/tmp';\n"
+      }
+    },
+    {
+      "mkdir": {
+        "path": "tmp",
+        "mode": "0750"
+      }
+    },
+    {
+      "delete": "setup"
+    }
+  ],
+  "finish": {
+    "path": "/",
+    "note": "Bir CyberPanel veritabanı kullanıcısıyla giriş yapın. Bu arayüz tüm veritabanlarına erişebildiği için adresi paylaşmayın."
+  },
+  "database": false,
+  "version_note": "resmi son sürüm adresi",
+  "deny": [
+    "tmp",
+    "libraries",
+    "templates",
+    "vendor"
+  ]
+}

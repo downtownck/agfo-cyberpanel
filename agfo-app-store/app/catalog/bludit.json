@@ -1,0 +1,33 @@
+{
+  "id": "bludit",
+  "name": "Bludit",
+  "badge": "BL",
+  "category": "cms",
+  "tagline": "Veritabanısız hızlı blog ve site",
+  "description": "JSON dosyalarında veri tutar; birkaç dakikada yayında.",
+  "homepage": "https://www.bludit.com",
+  "license": "MIT",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.0"
+  },
+  "download": {
+    "url": "https://github.com/bludit/bludit/archive/refs/tags/3.22.0.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/install.php",
+    "note": "Dosyalar hazır. Kurulumu aşağıdaki adresten tamamlayın."
+  },
+  "database": false,
+  "version_note": "3.22.0",
+  "deny": [
+    "bl-content/databases",
+    "bl-content/workspaces",
+    "bl-content/tmp"
+  ]
+}

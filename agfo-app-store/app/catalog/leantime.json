@@ -1,0 +1,50 @@
+{
+  "id": "leantime",
+  "name": "Leantime",
+  "badge": "LT",
+  "category": "project",
+  "tagline": "Proje yönetimi: görevler, zaman, strateji",
+  "description": "Kanban, Gantt, zaman takibi ve hedefler.",
+  "homepage": "https://leantime.io",
+  "license": "AGPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "github": "Leantime/leantime",
+    "asset": "^Leantime-v[\\d.]+\\.zip$",
+    "format": "zip",
+    "strip": 0
+  },
+  "fields": [],
+  "steps": [
+    {
+      "copy": {
+        "from": "config/sample.env",
+        "to": "config/.env"
+      }
+    },
+    {
+      "env": {
+        "file": "config/.env",
+        "set": {
+          "LEAN_APP_URL": "{url}",
+          "LEAN_DB_HOST": "{db_host}",
+          "LEAN_DB_USER": "{db_user}",
+          "LEAN_DB_PASSWORD": "{db_pass}",
+          "LEAN_DB_DATABASE": "{db_name}",
+          "LEAN_SESSION_PASSWORD": "{secret64}"
+        }
+      }
+    }
+  ],
+  "finish": {
+    "path": "/install",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "web_root": "public"
+}

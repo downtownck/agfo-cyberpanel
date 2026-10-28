@@ -45,9 +45,10 @@ DEFAULT_CONFIG = {
         "default_package": "Default",
         "default_php": "8.2",
         "issue_ssl": True,
+        "test_domain": "",                # saglik testi deneme kurulumlari icin
     },
     "limits": {"max_concurrent_jobs": 2, "job_log_lines": 4000, "download_timeout": 900},
-    "network": {"allow_downloads": True},
+    "network": {"allow_downloads": True, "github_token": ""},
     "ai": {"provider": "", "model": "", "send_logs": True},
 }
 
@@ -179,8 +180,10 @@ def recover_stale_jobs():
     with _lock:
         items = load_jobs()
         changed = 0
+        recovered = []
         for item in items:
             if item.get("status") in ("queued", "running"):
+                recovered.append(dict(item))
                 item["status"] = "error"
                 item["finished"] = int(time.time())
                 item["error"] = ("Servis yeniden basladigi icin is yarida kaldi. "
@@ -189,7 +192,7 @@ def recover_stale_jobs():
                 changed += 1
         if changed:
             save_jobs(items)
-        return changed
+        return recovered
 
 
 def get_job(job_id):

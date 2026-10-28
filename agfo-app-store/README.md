@@ -1,4 +1,4 @@
-# AGFO App Store 1.0.4
+# AGFO App Store 1.1.0
 
 CyberPanel için tek tıkla uygulama kurulumu. Uygulamayı seçersiniz; mağaza
 CyberPanel üzerinden yeni site (veya alt alan adı) açar, Let's Encrypt SSL
@@ -15,7 +15,7 @@ AGFO Package Runner ile ZIP'i yükleyin; `install.sh` root olarak çalışır.
 Elle:
 
 ```bash
-unzip agfo-app-store-1.0.4.zip && cd agfo-app-store-1.0.4 && bash install.sh
+unzip agfo-app-store-1.1.0.zip && cd agfo-app-store-1.1.0 && bash install.sh
 ```
 
 Kurulum sonunda panel adresi, menü linki ve (ilk kurulumda) panel şifresi
@@ -37,22 +37,73 @@ Alan adı verilmezse betik CyberPanel'in 8090 portundaki sertifikadan alan
 adını okur ve aynı Let's Encrypt sertifikasını kullanır; böylece tarayıcı
 uyarısı çıkmaz.
 
-## Katalog (12 uygulama)
+## Katalog (63 uygulama)
 
-| Uygulama | Kurulum | Kaynak | PHP |
-|---|---|---|---|
-| WordPress | tam otomatik (wp-cli) | resmi "son sürüm" adresi | 7.4+ |
-| Nextcloud | tam otomatik (occ) | resmi "son sürüm" adresi | 8.1+ |
-| Moodle | tam otomatik | 4.5 LTS son yama (resmi) | 8.1+ |
-| MediaWiki | tam otomatik | 1.43.10 LTS | 8.1+ |
-| Grav | tam otomatik | resmi "son sürüm" adresi | 8.0+ |
-| Joomla | sihirbaz | GitHub'daki son kararlı sürüm | 8.3+ |
-| Drupal | sihirbaz | resmi "son sürüm" adresi | 8.3+ |
-| EspoCRM | sihirbaz | GitHub'daki son kararlı sürüm | 8.3+ |
-| phpMyFAQ | sihirbaz | 4.1.11 | 8.3+ |
-| Matomo | sihirbaz | resmi "son sürüm" adresi | 8.0+ |
-| phpBB | sihirbaz | 3.3.19 | 8.0+ |
-| Dolibarr | sihirbaz | 24.0.1 (yalnız `htdocs/`) | 8.1+ |
+| Uygulama | Kategori | Kurulum | PHP | Kaynak | Not |
+|---|---|---|---|---|---|
+| Backdrop CMS | İçerik yönetimi | sihirbaz | 8.1+ | GitHub son sürüm | korunan klasör |
+| Bludit | İçerik yönetimi | sihirbaz | 8.0+ | sabit sürüm | korunan klasör |
+| Concrete CMS | İçerik yönetimi | sihirbaz | 8.1+ | GitHub son sürüm | korunan klasör |
+| Dotclear | İçerik yönetimi | sihirbaz | 8.2+ | resmi son sürüm | korunan klasör |
+| Drupal | İçerik yönetimi | sihirbaz | 8.3+ | resmi son sürüm | – |
+| e107 | İçerik yönetimi | sihirbaz | 8.1+ | sabit sürüm | korunan klasör |
+| ExpressionEngine | İçerik yönetimi | sihirbaz | 8.1+ | GitHub son sürüm | korunan klasör |
+| Grav | İçerik yönetimi | tek tıkla | 8.0+ | resmi son sürüm | – |
+| Joomla | İçerik yönetimi | sihirbaz | 8.3+ | GitHub son sürüm | – |
+| Omeka Classic | İçerik yönetimi | sihirbaz | 8.1+ | GitHub son sürüm | korunan klasör |
+| ProcessWire | İçerik yönetimi | sihirbaz | 8.1+ | resmi son sürüm | korunan klasör |
+| Serendipity | İçerik yönetimi | sihirbaz | 8.1+ | GitHub son sürüm | korunan klasör |
+| Textpattern | İçerik yönetimi | sihirbaz | 8.1+ | GitHub son sürüm | – |
+| Typemill | İçerik yönetimi | sihirbaz | 8.2+ | indirme sayfasından | korunan klasör |
+| WonderCMS | İçerik yönetimi | tek tıkla | 8.0+ | GitHub son sürüm | korunan klasör |
+| WordPress | İçerik yönetimi | tek tıkla | 7.4+ | resmi son sürüm | – |
+| XOOPS | İçerik yönetimi | sihirbaz | 8.1+ | sabit sürüm | korunan klasör |
+| AbanteCart | E-ticaret | sihirbaz | 8.2+ | sabit sürüm | korunan klasör |
+| OpenCart | E-ticaret | sihirbaz | 8.1+ | GitHub son sürüm | korunan klasör |
+| PrestaShop | E-ticaret | sihirbaz | 8.1+ | sabit sürüm | – |
+| QloApps | E-ticaret | sihirbaz | 8.1+ | GitHub son sürüm | – |
+| thirty bees | E-ticaret | sihirbaz | 8.2+ | GitHub son sürüm | – |
+| WooCommerce | E-ticaret | tek tıkla | 7.4+ | resmi son sürüm | – |
+| Zen Cart | E-ticaret | sihirbaz | 8.2+ | sabit sürüm | korunan klasör |
+| Dolibarr | CRM ve iş | sihirbaz | 8.1+ | sabit sürüm | – |
+| EspoCRM | CRM ve iş | sihirbaz | 8.3+ | GitHub son sürüm | – |
+| Mautic | CRM ve iş | sihirbaz | 8.2+ | GitHub son sürüm | – |
+| SuiteCRM 8 | CRM ve iş | sihirbaz | 8.1+ | GitHub son sürüm | web kökü public/ |
+| Akaunting | Muhasebe ve fatura | sihirbaz | 8.1+ | GitHub son sürüm | – |
+| Invoice Ninja | Muhasebe ve fatura | sihirbaz | 8.2+ | GitHub son sürüm | web kökü public/ |
+| InvoicePlane | Muhasebe ve fatura | sihirbaz | 8.1+ | GitHub son sürüm | korunan klasör |
+| Kanboard | Proje ve görev | tek tıkla | 8.1+ | sabit sürüm | korunan klasör |
+| Leantime | Proje ve görev | sihirbaz | 8.2+ | GitHub son sürüm | web kökü public/ |
+| FreeScout | Destek masası | sihirbaz | 8.2+ | resmi son sürüm | web kökü public/ |
+| osTicket | Destek masası | sihirbaz | 8.2+ | GitHub son sürüm | korunan klasör |
+| Chamilo | Eğitim | sihirbaz | 8.3+ | GitHub son sürüm | web kökü public/, yalnız kök |
+| Gibbon | Eğitim | sihirbaz | 8.1+ | GitHub son sürüm | korunan klasör |
+| Moodle | Eğitim | tek tıkla | 8.1+ | resmi son sürüm | – |
+| DokuWiki | Wiki ve bilgi | sihirbaz | 8.2+ | GitHub son sürüm | korunan klasör |
+| MediaWiki | Wiki ve bilgi | tek tıkla | 8.1+ | sabit sürüm | – |
+| phpMyFAQ | Wiki ve bilgi | sihirbaz | 8.3+ | sabit sürüm | – |
+| PmWiki | Wiki ve bilgi | tek tıkla | 8.1+ | resmi son sürüm | korunan klasör |
+| MyBB | Forum | sihirbaz | 8.1+ | GitHub son sürüm | – |
+| phpBB | Forum | sihirbaz | 8.0+ | sabit sürüm | – |
+| Friendica | İşbirliği | sihirbaz | 8.1+ | sabit sürüm | korunan klasör |
+| HumHub | İşbirliği | sihirbaz | 8.2+ | sabit sürüm | korunan klasör |
+| Nextcloud | İşbirliği | tek tıkla | 8.3+ | resmi son sürüm | – |
+| FileGator | Dosya ve medya | tek tıkla | 8.1+ | resmi son sürüm | web kökü dist/ |
+| Lychee | Dosya ve medya | sihirbaz | 8.4+ | GitHub son sürüm | web kökü public/ |
+| Piwigo | Dosya ve medya | sihirbaz | 8.1+ | indirme sayfasından | – |
+| Tiny File Manager | Dosya ve medya | tek tıkla | 8.0+ | resmi son sürüm | – |
+| Zenphoto | Dosya ve medya | sihirbaz | 8.1+ | sabit sürüm | korunan klasör |
+| phpList | E-posta | sihirbaz | 8.1+ | resmi son sürüm | korunan klasör |
+| Roundcube | E-posta | sihirbaz | 8.1+ | GitHub son sürüm | web kökü public_html/ |
+| SnappyMail | E-posta | tek tıkla | 8.0+ | sabit sürüm | korunan klasör |
+| LimeSurvey | Analitik ve anket | sihirbaz | 8.1+ | indirme sayfasından | – |
+| Matomo | Analitik ve anket | sihirbaz | 8.0+ | resmi son sürüm | – |
+| Revive Adserver | Analitik ve anket | sihirbaz | 8.1+ | indirme sayfasından | korunan klasör |
+| Adminer | Araçlar | tek tıkla | 8.0+ | GitHub son sürüm | – |
+| FreshRSS | Araçlar | sihirbaz | 8.1+ | sabit sürüm | web kökü p/ |
+| phpMyAdmin | Araçlar | tek tıkla | 8.1+ | resmi son sürüm | korunan klasör |
+| Shaarli | Araçlar | sihirbaz | 8.2+ | GitHub son sürüm | korunan klasör |
+| YOURLS | Araçlar | sihirbaz | 8.1+ | sabit sürüm | – |
 
 **Tam otomatik**: kurulum bittiğinde yönetici kullanıcı ve şifre hazırdır.
 **Sihirbaz**: site, SSL, veritabanı ve dosyalar hazırlanır; sonuç ekranındaki
@@ -61,8 +112,8 @@ bitirirsiniz.
 
 Kaynaklar mümkün olduğunca sürüm numarası içermeyen resmi "son sürüm"
 adreslerinden ya da GitHub'ın son kararlı sürüm kaydından kurulum anında
-bulunur; böylece eskimez. Sürüme sabit olanlar (phpBB, phpMyFAQ, MediaWiki,
-Dolibarr) 2026-10-28'de resmi kaynaklarda doğrulandı ve zamanla güncellenmelidir.
+bulunur; böylece eskimez. "Sabit sürüm" olanlar 2026-10-28/29'da resmi kaynaklarda doğrulandı ve zamanla güncellenmelidir;
+sağlık testi eskiyenleri gösterir, *AI'ya sor* yenisini önerir.
 İlk iş olarak *Ayarlar → Kataloğu doğrula* düğmesine basın: sunucu her
 uygulamanın gerçek indirme adresini kurulumda kullanılan yolla yoklar.
 
@@ -71,10 +122,21 @@ Uygulama daha yüksek bir sürüm istiyorsa kurulum hiçbir şey oluşturmadan
 reddedilir ve ne yapılacağı yazılır. Yeni site açılırken gereken sürüm
 otomatik seçilir; sunucuda o `lsphp` kurulu değilse yine baştan reddedilir.
 
-**Çıkarılanlar:** PrestaShop 9 (GitHub'da kurulabilir paket yok, yalnız
-derlenmesi gereken kaynak), SuiteCRM 8 (belge kökünün `public/` olmasını
-ister), LimeSurvey (paket adı her sürümde değişiyor, kalıcı adres yok) ve
-Laravel (uygulama değil, Composer isteyen iskelet).
+**Alınmayanlar ve nedenleri** (2026-10-29 araştırması): ownCloud (PHP 7.4'e
+kilitli), Grocy ve Firefly III (PHP 8.5 ister), BookStack, Kimai ve Laravel
+(hazır paket yok, Composer derlemesi ister), Wallabag ve ProjectSend (web
+kurulumu yok, komut satırı ve kuyruk işçisi ister), SMF (resmi paket adresi
+doğrulanamadı), MODX (kalıcı indirme adresi yok), Pico (geliştiricileri
+terk etti), YetiForce (depo arşivlendi), Kirby (açık sitelerde ücretli lisans),
+HESK (kalıcı adres yok, açık kaynak değil). PrestaShop 8.x PHP 8.1'de kaldığı
+için PrestaShop 9 paketi kullanılır; LimeSurvey ve SuiteCRM artık destekleniyor.
+
+**OpenLiteSpeed notu:** OpenLiteSpeed `.htaccess` içindeki `Deny`/`Require`
+satırlarını uygulamaz, yalnızca yönlendirme kurallarını işler. Pek çok uygulama
+hassas klasörlerini (veri, config, log) bu satırlarla korur. Tariflerdeki
+`deny` listesi bu klasörleri yönlendirme kuralıyla (`[F]`) kapatır; deneme
+kurulumu da bu klasörleri dışarıdan çağırıp gerçekten kapalı olduklarını
+doğrular.
 
 ## Kurulum başarısız olursa
 
@@ -83,6 +145,28 @@ bozuksa site ya da veritabanı hiç açılmaz. Sonraki bir adım başarısız ol
 o kurulumun oluşturduğu her şey geri alınır: veritabanı, alt dizin, veri
 klasörleri ve (siteyi bu kurulum açtıysa) site. Önceden var olan site ve
 dosyalara dokunulmaz.
+
+## Katalog sağlık testi
+
+*Ayarlar → Katalog sağlık testi* her uygulamayı bu sunucuda, gerçek paketiyle
+dener. Sonuç mağaza kartlarında etiket olarak görünür:
+**✓ doğrulandı** (deneme kurulumu geçti), **paket tamam** (paket testi geçti,
+henüz kurulmadı), **uyarılı**, **sorunlu**, **denenmedi**.
+
+- **Paket testi** (hızlı, hiçbir şey kurmaz): paketi indirir, arşiv mi diye
+  bakar, açar; kökte PHP giriş dosyası (ya da `public/index.php`), kurulum
+  sihirbazının dosyası, `composer.json` varsa `vendor/` klasörünün gelip
+  gelmediği (gelmediyse paket derleme ister, çalışmaz) ve paketin istediği PHP
+  sürümünün sunucuda kurulu olup olmadığı denetlenir.
+- **Deneme kurulumu** (asıl test): uygulama ayrı bir test sitesine
+  (`Ayarlar`'da tanımlanır; yoksa App Store PHP 8.3 ile kendisi açar, DNS
+  gerekmez) gerçekten kurulur, kurulum sayfası sunucunun içinden çağrılır
+  (HTTP kodu, `Fatal error`/`Uncaught`/500 gibi izler aranır) ve ardından
+  veritabanıyla birlikte iz bırakmadan kaldırılır.
+
+Tüm katalogda deneme kurulumu uzun sürer ve birkaç GB indirme yapar; tek tek
+*Dene* düğmesiyle de çalıştırılabilir. Başarısız uygulamalar için *AI'ya sor*
+ile yeni kaynak önerisi alınabilir.
 
 ## AI desteği
 
@@ -151,6 +235,18 @@ kendiliğinden silinmez; gerekmediğinde `trash/` altından elle silin.
   ]
 }
 ```
+
+İndirme tanımı üç biçimde olabilir: sabit adres (`url`), GitHub'daki son
+kararlı sürümün paketi (`github` + `asset` deseni; API sınırına takılırsa
+sürüm sayfasından bulunur) ya da resmi indirme sayfasından desenle bulunan
+adres (`page` + `regex`). `format: "file"` tek PHP dosyalı uygulamalar içindir
+(`target` dosya adı). `only` arşivin bir alt klasörünü kurar, `web_root:
+"public"` istekleri `public/` klasörüne yönlendiren ve diğer klasörleri
+(`.env`, `vendor`, `storage`) dışarıya kapatan `.htaccess` yazar.
+
+Adım türleri: `mkdir`, `write`, `copy` (ör. `.env.example` → `.env`), `env`
+(`.env` dosyasına anahtar yazar), `run` (site kullanıcısıyla, kabuksuz),
+`delete`, `chown`.
 
 Adımlar kabuk kullanmaz (yalnız argv listesi), `{degisken}` yer tutucuları
 doldurulur, tüm yollar site kökünün dışına çıkamaz. Komutlar site kullanıcısı

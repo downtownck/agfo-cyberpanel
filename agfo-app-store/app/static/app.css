@@ -111,7 +111,12 @@ label { display: block; margin-bottom: 4px; color: var(--fg-dim); font-size: 12p
 .t-analytics { background: linear-gradient(135deg,#f9a8d4,#f472b6); }
 .t-collab { background: linear-gradient(135deg,#86efac,#4ade80); }
 .t-forum { background: linear-gradient(135deg,#fca5a5,#f87171); }
-.t-framework { background: linear-gradient(135deg,#a5b4fc,#818cf8); }
+.t-finance { background: linear-gradient(135deg,#fde68a,#facc15); }
+.t-project { background: linear-gradient(135deg,#a5b4fc,#818cf8); }
+.t-support { background: linear-gradient(135deg,#fdba74,#fb923c); }
+.t-wiki { background: linear-gradient(135deg,#99f6e4,#14b8a6); }
+.t-files { background: linear-gradient(135deg,#bae6fd,#38bdf8); }
+.t-mail { background: linear-gradient(135deg,#fecaca,#ef4444); }
 .t-tools { background: linear-gradient(135deg,#cbd5e1,#94a3b8); }
 
 /* --- tablolar --- */
@@ -168,3 +173,12 @@ select { width: 100%; background: #0b1016; color: inherit; border: 1px solid #26
 .proposal code, .overrides code { word-break: break-all; font-size: 12px; }
 .overrides { margin-top: 10px; }
 .tool-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+.hbadge { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid #2a3a4f; color: #9fb0c4; white-space: nowrap; }
+.hbadge.verified { background: #12301f; border-color: #23633d; color: #a9f0c4; }
+.hbadge.package_ok { background: #12233a; border-color: #2a4f7a; color: #b6d4ff; }
+.hbadge.warn { background: #2a2414; border-color: #5a4a22; color: #ffe7b0; }
+.hbadge.fail { background: #2a1717; border-color: #5a2c2c; color: #ffd0d0; }
+.appcard-head .hbadge { margin-left: auto; align-self: flex-start; }
+#health-table td.det { font-size: 12px; color: #9aa4b2; max-width: 420px; }
+#health-table .tool-actions { justify-content: flex-end; }

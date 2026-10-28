@@ -1,0 +1,36 @@
+{
+  "id": "freescout",
+  "name": "FreeScout",
+  "badge": "FS",
+  "category": "support",
+  "tagline": "Help Scout benzeri ortak gelen kutusu",
+  "description": "Ekip e-posta kutularını bilet sistemine çevirir. Laravel tabanlı; web kurulum sihirbazı vardır.",
+  "homepage": "https://freescout.net",
+  "license": "AGPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2",
+    "extensions": [
+      "imap",
+      "intl",
+      "mbstring",
+      "zip",
+      "gd"
+    ]
+  },
+  "download": {
+    "url": "https://github.com/freescout-help-desk/freescout/archive/refs/heads/dist.zip",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/install",
+    "note": "Sihirbaz veritabanı bilgilerini ister. E-posta çekme ve kuyruk için bir cron gerekir: * * * * * php artisan schedule:run (site kullanıcısıyla)."
+  },
+  "database": true,
+  "version_note": "dağıtım dalı (her zaman güncel)",
+  "web_root": "public"
+}

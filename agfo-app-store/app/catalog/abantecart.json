@@ -1,0 +1,34 @@
+{
+  "id": "abantecart",
+  "name": "AbanteCart",
+  "badge": "AC",
+  "category": "shop",
+  "tagline": "Modern, uzantı destekli e-ticaret",
+  "description": "Hazır şablonlar ve çok dilli mağaza.",
+  "homepage": "https://www.abantecart.com",
+  "license": "OSL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "url": "https://github.com/abantecart/abantecart-src/archive/refs/tags/1.4.4.tar.gz",
+    "format": "tar.gz",
+    "strip": 1,
+    "only": "public_html"
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/install/",
+    "note": "Kurulum bitince install/ klasörünü silin."
+  },
+  "database": true,
+  "version_note": "1.4.4",
+  "deny": [
+    "system",
+    "download",
+    "resources/download"
+  ]
+}

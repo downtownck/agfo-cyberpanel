@@ -1,0 +1,42 @@
+{
+  "id": "omeka",
+  "name": "Omeka Classic",
+  "badge": "OM",
+  "category": "cms",
+  "tagline": "Dijital koleksiyon ve sergi platformu",
+  "description": "Arşivler, müzeler ve kütüphaneler için koleksiyon yayınlama.",
+  "homepage": "https://omeka.org/classic/",
+  "license": "GPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "github": "omeka/Omeka",
+    "asset": "^omeka-\\d+\\.\\d+(\\.\\d+)?\\.zip$",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [
+    {
+      "write": {
+        "path": "db.ini",
+        "mode": "0640",
+        "content": "[database]\nhost     = \"{db_host}\"\nusername = \"{db_user}\"\npassword = \"{db_pass}\"\ndbname   = \"{db_name}\"\nprefix   = \"omeka_\"\ncharset  = \"utf8\"\n"
+      }
+    }
+  ],
+  "finish": {
+    "path": "/install/",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "deny": [
+    "db.ini",
+    "application/config",
+    "application/logs"
+  ]
+}

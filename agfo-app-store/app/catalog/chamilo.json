@@ -1,0 +1,39 @@
+{
+  "id": "chamilo",
+  "name": "Chamilo",
+  "badge": "CH",
+  "category": "learning",
+  "tagline": "Kapsamlı e-öğrenme platformu (LMS)",
+  "description": "Kurslar, sınavlar, sertifikalar. PHP 8.3 ister; yalnızca alan adı köküne kurulur.",
+  "homepage": "https://chamilo.org",
+  "license": "GPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.3"
+  },
+  "download": {
+    "github": "chamilo/chamilo-lms",
+    "asset": "^chamilo-[0-9.]+\\.zip$",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [
+    {
+      "write": {
+        "path": ".env",
+        "content": "",
+        "mode": "0640"
+      }
+    }
+  ],
+  "finish": {
+    "path": "/main/install/index.php",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm · PHP 8.3+",
+  "web_root": "public",
+  "root_only": true
+}

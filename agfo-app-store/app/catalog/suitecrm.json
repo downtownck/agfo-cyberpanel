@@ -1,0 +1,36 @@
+{
+  "id": "suitecrm",
+  "name": "SuiteCRM 8",
+  "badge": "SC",
+  "category": "crm",
+  "tagline": "Kurumsal açık kaynak CRM",
+  "description": "Satış, müşteri ve kampanya yönetimi.",
+  "homepage": "https://suitecrm.com",
+  "license": "AGPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "intl",
+      "zip",
+      "gd",
+      "curl"
+    ]
+  },
+  "download": {
+    "github": "SuiteCRM/SuiteCRM-Core",
+    "asset": "^SuiteCRM-\\d+\\.\\d+\\.\\d+\\.zip$",
+    "format": "zip",
+    "strip": 0
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/install.php",
+    "note": "İş akışları ve e-postalar için zamanlayıcı cron'u ekleyin (public/legacy/cron.php)."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "web_root": "public"
+}

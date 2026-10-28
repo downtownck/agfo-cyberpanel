@@ -1,0 +1,29 @@
+{
+  "id": "thirtybees",
+  "name": "thirty bees",
+  "badge": "TB",
+  "category": "shop",
+  "tagline": "PrestaShop 1.6 kökenli kararlı e-ticaret",
+  "description": "Uzun vadeli kararlılık odaklı mağaza yazılımı.",
+  "homepage": "https://thirtybees.com",
+  "license": "OSL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "github": "thirtybees/thirtybees",
+    "asset": "^thirtybees-v[\\d.]+-php8\\.2\\.zip$",
+    "format": "zip",
+    "strip": 0
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/install/",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm (PHP 8.2 derlemesi)"
+}

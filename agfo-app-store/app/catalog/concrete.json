@@ -1,0 +1,35 @@
+{
+  "id": "concrete",
+  "name": "Concrete CMS",
+  "badge": "CC",
+  "category": "cms",
+  "tagline": "Sürükle-bırak düzenlemeli kurumsal CMS",
+  "description": "Sayfada düzenleme, iş akışları ve izinler. Paket ~77 MB.",
+  "homepage": "https://www.concretecms.org",
+  "license": "MIT",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "github": "concretecms/concretecms",
+    "asset": "^concrete-cms-[\\d.]+\\.zip$",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "deny": [
+    "application/config",
+    "application/files/cache",
+    "concrete/vendor",
+    "updates"
+  ]
+}

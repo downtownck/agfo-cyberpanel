@@ -2,7 +2,7 @@
   "id": "phpmyfaq",
   "name": "phpMyFAQ",
   "badge": "FQ",
-  "category": "tools",
+  "category": "wiki",
   "tagline": "Sık sorulan sorular ve bilgi tabanı",
   "description": "Müşteri destek dokümantasyonu için arama destekli SSS sistemi. Kurulum sihirbazı tarayıcıdan tamamlanır.",
   "homepage": "https://www.phpmyfaq.de",

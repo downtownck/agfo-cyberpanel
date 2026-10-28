@@ -1,0 +1,33 @@
+{
+  "id": "zencart",
+  "name": "Zen Cart",
+  "badge": "ZC",
+  "category": "shop",
+  "tagline": "Köklü, esnek e-ticaret",
+  "description": "Geniş eklenti ekosistemiyle klasik online mağaza.",
+  "homepage": "https://www.zen-cart.com",
+  "license": "GPL-2.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "url": "https://github.com/zencart/zencart/archive/refs/tags/v2.2.2.zip",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/zc_install/",
+    "note": "Kurulum bitince zc_install/ klasörünü silin ve admin/ klasörünü yeniden adlandırın."
+  },
+  "database": true,
+  "version_note": "2.2.2",
+  "deny": [
+    "cache",
+    "logs",
+    "not_for_release"
+  ]
+}

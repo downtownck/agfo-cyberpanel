@@ -1,0 +1,29 @@
+{
+  "id": "limesurvey",
+  "name": "LimeSurvey",
+  "badge": "LS",
+  "category": "analytics",
+  "tagline": "Profesyonel anket ve form aracı",
+  "description": "Çok dilli anketler, koşullu sorular ve raporlar.",
+  "homepage": "https://www.limesurvey.org",
+  "license": "GPL-2.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "page": "https://community.limesurvey.org/downloads/",
+    "regex": "(https://download\\.limesurvey\\.org/latest-master/limesurvey[0-9.]+\\+[0-9]+\\.zip)",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/index.php?r=installer",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "son sürüm (indirme sayfasından)"
+}

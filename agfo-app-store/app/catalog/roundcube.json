@@ -1,0 +1,35 @@
+{
+  "id": "roundcube",
+  "name": "Roundcube",
+  "badge": "RC",
+  "category": "mail",
+  "tagline": "Modern web tabanlı e-posta istemcisi",
+  "description": "CyberPanel'in e-posta hesaplarına tarayıcıdan erişim. Kurulum sihirbazı IMAP/SMTP ayarlarını ister.",
+  "homepage": "https://roundcube.net",
+  "license": "GPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "intl",
+      "mbstring",
+      "pdo_mysql"
+    ]
+  },
+  "download": {
+    "github": "roundcube/roundcubemail",
+    "asset": "^roundcubemail-[\\d.]+-complete\\.tar\\.gz$",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/installer.php",
+    "note": "Kurulum sihirbazında veritabanı bilgilerini girin; IMAP/SMTP sunucusu olarak localhost kullanabilirsiniz. Kurulum bitince installer/ klasörünü silin."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm (complete paket)",
+  "web_root": "public_html"
+}

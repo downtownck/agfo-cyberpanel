@@ -1,0 +1,35 @@
+{
+  "id": "processwire",
+  "name": "ProcessWire",
+  "badge": "PR",
+  "category": "cms",
+  "tagline": "Geliştirici dostu, esnek CMS ve çatı",
+  "description": "Özel alan yapılarıyla içerik siteleri.",
+  "homepage": "https://processwire.com",
+  "license": "MPL-2.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "url": "https://github.com/processwire/processwire/archive/master.zip",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/install.php",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "kararlı ana dal (her zaman güncel)",
+  "deny": [
+    "site/assets/cache",
+    "site/assets/logs",
+    "site/assets/backups",
+    "site/assets/sessions",
+    "wire/config.php"
+  ]
+}

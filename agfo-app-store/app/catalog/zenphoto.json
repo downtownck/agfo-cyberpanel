@@ -1,0 +1,32 @@
+{
+  "id": "zenphoto",
+  "name": "Zenphoto",
+  "badge": "ZP",
+  "category": "files",
+  "tagline": "Fotoğraf ve medya galerisi CMS'i",
+  "description": "Galeriler, albümler ve basit sayfalar.",
+  "homepage": "https://www.zenphoto.org",
+  "license": "GPL-2.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "url": "https://github.com/zenphoto/zenphoto/archive/refs/tags/v1.6.8.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/zp-core/setup/index.php",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "1.6.8",
+  "deny": [
+    "zp-data",
+    "backup"
+  ]
+}

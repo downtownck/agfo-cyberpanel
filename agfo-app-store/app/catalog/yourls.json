@@ -1,0 +1,53 @@
+{
+  "id": "yourls",
+  "name": "YOURLS",
+  "badge": "YO",
+  "category": "tools",
+  "tagline": "Kendi kısa bağlantı servisiniz",
+  "description": "alanadi.com/abc biçiminde kısa linkler ve tıklama istatistikleri.",
+  "homepage": "https://yourls.org",
+  "license": "MIT",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "url": "https://github.com/YOURLS/YOURLS/archive/refs/tags/1.10.6.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [
+    {
+      "id": "admin_user",
+      "label": "Yönetici kullanıcı adı",
+      "type": "text",
+      "default": "admin",
+      "pattern": "^[A-Za-z0-9_.-]{3,32}$",
+      "pattern_hint": "3-32 harf, rakam, _ . -"
+    },
+    {
+      "id": "admin_pass",
+      "label": "Yönetici şifresi (boş = rastgele)",
+      "type": "password",
+      "required": false,
+      "pattern": "^[A-Za-z0-9_.!@%^*+=-]{8,64}$",
+      "pattern_hint": "8-64 karakter; tırnak, $ ve \\ kullanmayın"
+    }
+  ],
+  "steps": [
+    {
+      "write": {
+        "path": "user/config.php",
+        "mode": "0640",
+        "content": "<?php\ndefine('YOURLS_DB_USER', '{db_user}');\ndefine('YOURLS_DB_PASS', '{db_pass}');\ndefine('YOURLS_DB_NAME', '{db_name}');\ndefine('YOURLS_DB_HOST', '{db_host}');\ndefine('YOURLS_DB_PREFIX', 'yourls_');\ndefine('YOURLS_SITE', '{url}');\ndefine('YOURLS_LANG', '');\ndefine('YOURLS_UNIQUE_URLS', true);\ndefine('YOURLS_PRIVATE', true);\ndefine('YOURLS_COOKIEKEY', '{secret64}');\n$yourls_user_passwords = array('{admin_user}' => '{admin_pass}');\ndefine('YOURLS_URL_CONVERT', 36);\ndefine('YOURLS_DEBUG', false);\n$yourls_reserved_URL = array('admin', 'api', 'user');\n"
+      }
+    }
+  ],
+  "finish": {
+    "path": "/admin/install.php",
+    "note": "Kurulum sayfasında 'Install YOURLS' düğmesine basın; ardından yukarıdaki kullanıcıyla girin. Şifre ilk girişte dosyada şifrelenir."
+  },
+  "database": true,
+  "version_note": "1.10.6"
+}

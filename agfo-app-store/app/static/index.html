@@ -122,8 +122,28 @@
         </details>
       </div>
 
+      <div class="panel" id="health-panel">
+        <h3>Katalog sağlık testi</h3>
+        <p class="muted"><b>Paket testi</b> her uygulamanın paketini bu sunucuya indirir, açar ve yapısını denetler (kurulum dosyası, <code>vendor/</code>, PHP sürümü); hiçbir şey kurmaz. <b>Deneme kurulumu</b> uygulamayı ayrı bir test sitesine gerçekten kurar, sayfasını sunucu içinden çağırır ve iz bırakmadan kaldırır.</p>
+        <div class="row two">
+          <div><label for="health-domain">Test sitesi alan adı (yoksa App Store kendisi açar; DNS gerekmez)</label><input id="health-domain" type="text" placeholder="apptest.alanadi.com" spellcheck="false"></div>
+          <div class="btn-row" style="align-items:flex-end"><button class="btn" id="btn-health-domain">Kaydet</button><span id="health-php" class="muted"></span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="btn-health-package">Paket testi (tümü)</button>
+          <button class="btn" id="btn-health-trial">Deneme kurulumu (tümü)</button>
+          <span id="health-status" class="muted"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="tbl" id="health-table">
+            <thead><tr><th>Uygulama</th><th>Paket</th><th>Deneme</th><th>Ayrıntı</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="panel">
-        <h3>Katalog doğrulama</h3>
+        <h3>Hızlı adres yoklaması</h3>
         <p class="muted">Her uygulamanın indirme adresini sunucudan yoklar. Bir sürüm yayından kalkmışsa burada görünür.</p>
         <div class="btn-row">
           <button class="btn" id="btn-verify">Katalogu doğrula</button>

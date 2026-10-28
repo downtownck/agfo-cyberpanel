@@ -1,0 +1,35 @@
+{
+  "id": "kanboard",
+  "name": "Kanboard",
+  "badge": "KB",
+  "category": "project",
+  "tagline": "Sade Kanban proje panosu",
+  "description": "Görevleri sütunlarda yönetin. Veriler SQLite'ta tutulur, veritabanı kurulumu gerekmez.",
+  "homepage": "https://kanboard.org",
+  "license": "MIT",
+  "install_mode": "cli",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "url": "https://github.com/kanboard/kanboard/archive/refs/tags/v1.2.56.zip",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/",
+    "note": "İlk giriş admin / admin — girer girmez şifreyi değiştirin."
+  },
+  "database": false,
+  "version_note": "1.2.56",
+  "deny": [
+    "data",
+    "app",
+    "libs",
+    "vendor",
+    "config.default.php"
+  ]
+}

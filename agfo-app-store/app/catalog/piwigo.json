@@ -1,0 +1,29 @@
+{
+  "id": "piwigo",
+  "name": "Piwigo",
+  "badge": "PW",
+  "category": "files",
+  "tagline": "Fotoğraf galerisi ve arşiv",
+  "description": "Kurumsal fotoğraf arşivleri ve galeriler için.",
+  "homepage": "https://piwigo.org",
+  "license": "GPL-2.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "page": "https://github.com/Piwigo/Piwigo/releases/latest",
+    "regex": "(https://piwigo\\.org/download/dlcounter\\.php\\?code=[0-9.]+)",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/install.php",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "son sürüm (sürüm sayfasından)"
+}

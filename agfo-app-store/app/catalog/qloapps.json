@@ -1,0 +1,34 @@
+{
+  "id": "qloapps",
+  "name": "QloApps",
+  "badge": "QA",
+  "category": "shop",
+  "tagline": "Otel rezervasyon ve web sitesi",
+  "description": "Oda yönetimi, online rezervasyon ve ödeme.",
+  "homepage": "https://qloapps.com",
+  "license": "OSL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "soap",
+      "gd",
+      "zip"
+    ]
+  },
+  "download": {
+    "github": "Qloapps/QloApps",
+    "asset": "^qloapps-[\\d.]+\\.zip$",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/install/",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm"
+}

@@ -1,0 +1,29 @@
+{
+  "id": "mautic",
+  "name": "Mautic",
+  "badge": "MA",
+  "category": "crm",
+  "tagline": "Açık kaynak pazarlama otomasyonu",
+  "description": "E-posta kampanyaları, segmentler ve potansiyel müşteri takibi.",
+  "homepage": "https://www.mautic.org",
+  "license": "GPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "github": "mautic/mautic",
+    "asset": "^[0-9]+\\.[0-9]+\\.[0-9]+\\.zip$",
+    "format": "zip",
+    "strip": 0
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/index.php/installer",
+    "note": "Kampanyalar ve e-posta kuyruğu için Mautic'in cron görevlerini eklemeniz gerekir."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm"
+}

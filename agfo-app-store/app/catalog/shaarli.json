@@ -1,0 +1,38 @@
+{
+  "id": "shaarli",
+  "name": "Shaarli",
+  "badge": "SH",
+  "category": "tools",
+  "tagline": "Kişisel yer imi ve not paylaşımı",
+  "description": "Veritabanı gerektirmeyen minimalist yer imi yöneticisi.",
+  "homepage": "https://shaarli.readthedocs.io",
+  "license": "Zlib",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "github": "shaarli/Shaarli",
+    "asset": "^shaarli-v[\\d.]+-full\\.zip$",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/",
+    "note": "Dosyalar hazır. Kurulumu aşağıdaki adresten tamamlayın."
+  },
+  "database": false,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "deny": [
+    "data",
+    "cache",
+    "tmp",
+    "pagecache",
+    "application",
+    "vendor",
+    "inc"
+  ]
+}

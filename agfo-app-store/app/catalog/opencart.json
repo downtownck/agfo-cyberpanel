@@ -1,0 +1,52 @@
+{
+  "id": "opencart",
+  "name": "OpenCart",
+  "badge": "OC",
+  "category": "shop",
+  "tagline": "Popüler, hafif e-ticaret",
+  "description": "Çok mağazalı, eklenti zengini online satış.",
+  "homepage": "https://www.opencart.com",
+  "license": "GPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "curl",
+      "gd",
+      "zip"
+    ]
+  },
+  "download": {
+    "github": "opencart/opencart",
+    "asset": "^opencart-[\\d.]+\\.zip$",
+    "format": "zip",
+    "strip": 0,
+    "only": "upload"
+  },
+  "fields": [],
+  "steps": [
+    {
+      "copy": {
+        "from": "config-dist.php",
+        "to": "config.php"
+      }
+    },
+    {
+      "copy": {
+        "from": "admin/config-dist.php",
+        "to": "admin/config.php"
+      }
+    }
+  ],
+  "finish": {
+    "path": "/install/",
+    "note": "Kurulum bitince install/ klasörünü silin."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "deny": [
+    "system/storage",
+    "system/config"
+  ]
+}

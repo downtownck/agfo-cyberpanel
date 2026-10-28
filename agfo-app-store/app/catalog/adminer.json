@@ -1,0 +1,30 @@
+{
+  "id": "adminer",
+  "name": "Adminer",
+  "badge": "AD",
+  "category": "tools",
+  "tagline": "Tek dosyalık veritabanı yönetim aracı",
+  "description": "phpMyAdmin'in hafif alternatifi; tek PHP dosyasıdır.",
+  "homepage": "https://www.adminer.org",
+  "license": "Apache-2.0",
+  "install_mode": "cli",
+  "tags": [],
+  "requires": {
+    "php": "8.0"
+  },
+  "download": {
+    "github": "vrana/adminer",
+    "asset": "^adminer-\\d+\\.\\d+\\.\\d+\\.php$",
+    "format": "file",
+    "strip": 0,
+    "target": "index.php"
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/",
+    "note": "Bir CyberPanel veritabanı kullanıcısıyla giriş yapın; adresi paylaşmayın."
+  },
+  "database": false,
+  "version_note": "GitHub'daki son kararlı sürüm"
+}

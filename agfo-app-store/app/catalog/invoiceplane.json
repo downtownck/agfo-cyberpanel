@@ -1,0 +1,53 @@
+{
+  "id": "invoiceplane",
+  "name": "InvoicePlane",
+  "badge": "IP",
+  "category": "finance",
+  "tagline": "Sade fatura ve teklif yönetimi",
+  "description": "Serbest çalışanlar ve küçük işletmeler için.",
+  "homepage": "https://www.invoiceplane.com",
+  "license": "MIT",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "github": "InvoicePlane/InvoicePlane",
+    "asset": "^v[\\d.]+\\.zip$",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [
+    {
+      "copy": {
+        "from": "ipconfig.php.example",
+        "to": "ipconfig.php"
+      }
+    },
+    {
+      "env": {
+        "file": "ipconfig.php",
+        "set": {
+          "IP_URL": "{url}",
+          "DB_HOSTNAME": "{db_host}",
+          "DB_USERNAME": "{db_user}",
+          "DB_PASSWORD": "{db_pass}",
+          "DB_DATABASE": "{db_name}"
+        }
+      }
+    }
+  ],
+  "finish": {
+    "path": "/index.php/setup",
+    "note": "Kurulum bitince ipconfig.php içinde DISABLE_SETUP=true yapın."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "deny": [
+    "application",
+    "storage",
+    "vendor"
+  ]
+}

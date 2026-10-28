@@ -1,0 +1,32 @@
+{
+  "id": "backdrop",
+  "name": "Backdrop CMS",
+  "badge": "BD",
+  "category": "cms",
+  "tagline": "Drupal 7 kökenli, sade ve hızlı CMS",
+  "description": "Kurumsal siteler için; Drupal 7'den kolay geçiş.",
+  "homepage": "https://backdropcms.org",
+  "license": "GPL-2.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "github": "backdrop/backdrop",
+    "asset": "^backdrop\\.zip$",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/core/install.php",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "deny": [
+    "files/config_*"
+  ]
+}

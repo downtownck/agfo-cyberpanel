@@ -2,7 +2,7 @@
   "id": "mediawiki",
   "name": "MediaWiki",
   "badge": "MW",
-  "category": "cms",
+  "category": "wiki",
   "tagline": "Vikipedi'nin çalıştığı wiki yazılımı",
   "description": "Kurumsal bilgi tabanı ve dokümantasyon için. Kurulum komut satırından otomatik yapılır.",
   "homepage": "https://www.mediawiki.org",

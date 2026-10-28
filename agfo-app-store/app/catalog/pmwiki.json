@@ -1,0 +1,54 @@
+{
+  "id": "pmwiki",
+  "name": "PmWiki",
+  "badge": "PM",
+  "category": "wiki",
+  "tagline": "Sade, hızlı ve dosya tabanlı wiki",
+  "description": "Küçük ekipler ve kişisel bilgi tabanları için. Veritabanı gerekmez.",
+  "homepage": "https://www.pmwiki.org",
+  "license": "GPL-2.0",
+  "install_mode": "cli",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "url": "https://www.pmwiki.org/pub/pmwiki/pmwiki-latest.tgz",
+    "format": "tgz",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [
+    {
+      "copy": {
+        "from": "docs/sample-config.php",
+        "to": "local/config.php",
+        "optional": true
+      }
+    },
+    {
+      "write": {
+        "path": "index.php",
+        "content": "<?php include_once('pmwiki.php');\n"
+      }
+    },
+    {
+      "mkdir": {
+        "path": "wiki.d",
+        "mode": "0755"
+      }
+    }
+  ],
+  "finish": {
+    "path": "/",
+    "note": "Wiki hazır. Ayarlar local/config.php dosyasındadır."
+  },
+  "database": false,
+  "version_note": "resmi son sürüm adresi",
+  "deny": [
+    "wiki.d",
+    "local",
+    "cookbook",
+    "scripts"
+  ]
+}

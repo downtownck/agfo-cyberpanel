@@ -1,0 +1,29 @@
+{
+  "id": "filegator",
+  "name": "FileGator",
+  "badge": "FG",
+  "category": "files",
+  "tagline": "Çok kullanıcılı web dosya yöneticisi",
+  "description": "Kullanıcılara klasör paylaşımı ve tarayıcıdan yükleme.",
+  "homepage": "https://filegator.io",
+  "license": "MIT",
+  "install_mode": "cli",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "url": "https://github.com/filegator/static/raw/master/builds/filegator_latest.zip",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/",
+    "note": "İlk giriş admin / admin123 — hemen değiştirin."
+  },
+  "database": false,
+  "version_note": "resmi son derleme",
+  "web_root": "dist"
+}

@@ -1,0 +1,48 @@
+{
+  "id": "tinyfilemanager",
+  "name": "Tiny File Manager",
+  "badge": "TF",
+  "category": "files",
+  "tagline": "Tek dosyalık web dosya yöneticisi",
+  "description": "Sitenin dosyalarını tarayıcıdan yönetin. Rastgele bir yönetici şifresiyle kurulur.",
+  "homepage": "https://tinyfilemanager.github.io",
+  "license": "GPL-3.0",
+  "install_mode": "cli",
+  "tags": [],
+  "requires": {
+    "php": "8.0"
+  },
+  "download": {
+    "url": "https://raw.githubusercontent.com/prasathmani/tinyfilemanager/2.6/tinyfilemanager.php",
+    "format": "file",
+    "strip": 0,
+    "target": "index.php"
+  },
+  "fields": [
+    {
+      "id": "admin_user",
+      "label": "Yönetici kullanıcı adı",
+      "type": "text",
+      "default": "admin",
+      "pattern": "^[A-Za-z0-9_.-]{3,32}$",
+      "pattern_hint": "3-32 harf, rakam, _ . -"
+    }
+  ],
+  "steps": [
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "-r",
+          "file_put_contents('config.php', '<?php $auth_users = array(' . var_export('{admin_user}', true) . ' => ' . var_export(password_hash('{admin_pass}', PASSWORD_DEFAULT), true) . '); $readonly_users = array();');"
+        ]
+      }
+    }
+  ],
+  "finish": {
+    "path": "/",
+    "note": "Varsayılan admin/admin@123 hesabı kullanılmaz; yukarıdaki kullanıcı ve şifreyle girin. Araç sitenin tüm dosyalarını yönetebilir."
+  },
+  "database": false,
+  "version_note": "2.6"
+}

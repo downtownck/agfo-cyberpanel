@@ -1,0 +1,38 @@
+{
+  "id": "gibbon",
+  "name": "Gibbon",
+  "badge": "GB",
+  "category": "learning",
+  "tagline": "Okul yönetim platformu",
+  "description": "Öğrenci, ders programı, not ve veli iletişimi.",
+  "homepage": "https://gibbonedu.org",
+  "license": "GPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "gettext",
+      "intl",
+      "zip",
+      "gd"
+    ]
+  },
+  "download": {
+    "github": "GibbonEdu/core",
+    "asset": "^GibbonEduCore-InstallBundle\\.zip$",
+    "format": "zip",
+    "strip": 0
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/installer/install.php",
+    "note": "Gibbon max_input_vars ≥ 8000 önerir (CyberPanel > PHP ayarları)."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "deny": [
+    "uploads/reports"
+  ]
+}

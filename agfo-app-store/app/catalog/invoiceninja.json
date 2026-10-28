@@ -1,0 +1,48 @@
+{
+  "id": "invoiceninja",
+  "name": "Invoice Ninja",
+  "badge": "IN",
+  "category": "finance",
+  "tagline": "Fatura, teklif ve tahsilat",
+  "description": "Müşteriye fatura, tekrarlayan faturalar ve online ödeme. Paket ~200 MB.",
+  "homepage": "https://invoiceninja.com",
+  "license": "Elastic-2.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "github": "invoiceninja/invoiceninja",
+    "asset": "^invoiceninja\\.tar\\.gz$",
+    "format": "tar.gz",
+    "strip": 0
+  },
+  "fields": [],
+  "steps": [
+    {
+      "copy": {
+        "from": ".env.example",
+        "to": ".env"
+      }
+    },
+    {
+      "env": {
+        "set": {
+          "APP_URL": "{url}",
+          "DB_HOST": "{db_host}",
+          "DB_DATABASE": "{db_name}",
+          "DB_USERNAME": "{db_user}",
+          "DB_PASSWORD": "{db_pass}"
+        }
+      }
+    }
+  ],
+  "finish": {
+    "path": "/setup",
+    "note": "E-postalar ve tekrarlayan faturalar için her dakika çalışan cron gerekir: php artisan schedule:run."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "web_root": "public"
+}

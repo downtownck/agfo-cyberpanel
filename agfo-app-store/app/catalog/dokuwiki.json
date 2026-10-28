@@ -1,0 +1,39 @@
+{
+  "id": "dokuwiki",
+  "name": "DokuWiki",
+  "badge": "DW",
+  "category": "wiki",
+  "tagline": "Veritabanı gerektirmeyen, dosya tabanlı wiki",
+  "description": "Belgeler, prosedürler ve iç bilgi bankası için. Veriler dosyalarda tutulur; kurulum sihirbazı yönetici hesabını oluşturur.",
+  "homepage": "https://www.dokuwiki.org",
+  "license": "GPL-2.0",
+  "install_mode": "web",
+  "tags": [
+    "wiki",
+    "dokümantasyon"
+  ],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "github": "dokuwiki/dokuwiki",
+    "asset": "^dokuwiki-\\d{4}-\\d{2}-\\d{2}[a-z]?\\.tgz$",
+    "format": "tgz",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/install.php",
+    "note": "Dosyalar hazır. Kurulumu aşağıdaki adresten tamamlayın."
+  },
+  "database": false,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "deny": [
+    "data",
+    "conf",
+    "bin",
+    "inc",
+    "vendor"
+  ]
+}

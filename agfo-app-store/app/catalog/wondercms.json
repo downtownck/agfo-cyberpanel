@@ -1,0 +1,35 @@
+{
+  "id": "wondercms",
+  "name": "WonderCMS",
+  "badge": "WD",
+  "category": "cms",
+  "tagline": "Tek sayfalık, veritabanısız mini CMS",
+  "description": "Küçük tanıtım siteleri için birkaç dakikada kurulum.",
+  "homepage": "https://www.wondercms.com",
+  "license": "MIT",
+  "install_mode": "cli",
+  "tags": [],
+  "requires": {
+    "php": "8.0"
+  },
+  "download": {
+    "github": "WonderCMS/wondercms",
+    "asset": "^wondercms-\\d+\\.zip$",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/",
+    "note": "İlk açılışta yönetici şifresi ekranda gösterilir; hemen değiştirin."
+  },
+  "database": false,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "deny": [
+    "data",
+    "data.json",
+    "database.js",
+    "backups"
+  ]
+}

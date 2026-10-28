@@ -18,7 +18,7 @@ Ortak tasarım kuralları:
 | [agfo-ssh-terminal](agfo-ssh-terminal/) | 1.3.1 | Tarayıcıdan PuTTY tarzı SSH terminali; root kabuğu, sekmeler, kayıtlı oturumlar |
 | [agfo-ssh-menu](agfo-ssh-menu/) | 1.4.0 | CyberPanel kenar menüsünü düzenler: girdi ekler, günceller, siler |
 | [agfo-firewall-ai](agfo-firewall-ai/) | 1.1.1 | CrowdSec üzerine AI destekli güvenlik duvarı paneli; öneri üretir, siz onaylarsınız |
-| [agfo-app-store](agfo-app-store/) | 1.0.4 | Uygulama kurma ve kaldırma (12 uygulama), AI destekli hata analizi ve katalog onarımı, Runner araçlarını yönetme |
+| [agfo-app-store](agfo-app-store/) | 1.1.0 | Uygulama kurma ve kaldırma (63 uygulama, sunucuda sağlık testi), AI destekli hata analizi ve katalog onarımı, Runner araçlarını yönetme |
 
 ## Hızlı kurulum
 

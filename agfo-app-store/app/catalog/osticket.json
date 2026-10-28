@@ -1,0 +1,40 @@
+{
+  "id": "osticket",
+  "name": "osTicket",
+  "badge": "OT",
+  "category": "support",
+  "tagline": "Yaygın kullanılan destek bilet sistemi",
+  "description": "E-posta ve web formundan gelen talepleri bilete dönüştürür.",
+  "homepage": "https://osticket.com",
+  "license": "GPL-2.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "github": "osTicket/osTicket",
+    "asset": "^osTicket-v[0-9.]+\\.zip$",
+    "format": "zip",
+    "strip": 0,
+    "only": "upload"
+  },
+  "fields": [],
+  "steps": [
+    {
+      "copy": {
+        "from": "include/ost-sampleconfig.php",
+        "to": "include/ost-config.php"
+      }
+    }
+  ],
+  "finish": {
+    "path": "/setup/",
+    "note": "Kurulum bitince setup/ klasörünü silin. E-posta çekmek için api/cron.php'yi cron'a ekleyin."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm",
+  "deny": [
+    "include"
+  ]
+}

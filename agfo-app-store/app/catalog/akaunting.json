@@ -1,0 +1,35 @@
+{
+  "id": "akaunting",
+  "name": "Akaunting",
+  "badge": "AK",
+  "category": "finance",
+  "tagline": "Küçük işletmeler için online muhasebe",
+  "description": "Fatura, gelir-gider, banka hesapları ve raporlar.",
+  "homepage": "https://akaunting.com",
+  "license": "BSL-1.1",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1",
+    "extensions": [
+      "bcmath",
+      "intl",
+      "zip",
+      "gd"
+    ]
+  },
+  "download": {
+    "github": "akaunting/akaunting",
+    "asset": "^Akaunting_[\\d.]+-Stable\\.zip$",
+    "format": "zip",
+    "strip": 0
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/",
+    "note": "Sihirbaz veritabanı bilgilerini ister. Sunucuda proc_open/proc_close kapalıysa kurulum durur. Lisans: Business Source License."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm"
+}

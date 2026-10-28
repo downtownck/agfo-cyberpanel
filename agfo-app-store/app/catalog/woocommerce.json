@@ -1,0 +1,161 @@
+{
+  "id": "woocommerce",
+  "name": "WooCommerce",
+  "badge": "WC",
+  "category": "shop",
+  "tagline": "WordPress üzerinde tam donanımlı e-ticaret",
+  "description": "WordPress kurulur, WooCommerce eklentisi wordpress.org'dan yüklenip etkinleştirilir. Mağaza kurulum sihirbazı ilk girişte açılır.",
+  "homepage": "https://woocommerce.com",
+  "license": "GPL-3.0",
+  "install_mode": "cli",
+  "tags": [
+    "e-ticaret",
+    "mağaza",
+    "wordpress"
+  ],
+  "requires": {
+    "php": "7.4",
+    "extensions": [
+      "mysqli",
+      "gd",
+      "curl"
+    ]
+  },
+  "download": {
+    "url": "https://wordpress.org/latest.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [
+    {
+      "id": "admin_user",
+      "label": "Yönetici kullanıcı adı",
+      "type": "text",
+      "default": "admin"
+    },
+    {
+      "id": "admin_pass",
+      "label": "Yönetici şifresi (boş bırakılırsa üretilir)",
+      "type": "password",
+      "required": false
+    },
+    {
+      "id": "admin_email",
+      "label": "Yönetici e-postası",
+      "type": "email"
+    }
+  ],
+  "steps": [
+    {
+      "run": {
+        "argv": [
+          "curl",
+          "-fsSL",
+          "-o",
+          "{docroot}/wp-cli.phar",
+          "https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar"
+        ],
+        "timeout": 300
+      }
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/wp-cli.phar",
+          "core",
+          "config",
+          "--path={docroot}",
+          "--dbname={db_name}",
+          "--dbuser={db_user}",
+          "--dbpass={db_pass}",
+          "--dbhost={db_host}",
+          "--skip-check"
+        ]
+      }
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/wp-cli.phar",
+          "core",
+          "install",
+          "--path={docroot}",
+          "--url={url}",
+          "--title={title}",
+          "--admin_user={admin_user}",
+          "--admin_password={admin_pass}",
+          "--admin_email={admin_email}",
+          "--skip-email"
+        ],
+        "timeout": 600
+      }
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/wp-cli.phar",
+          "option",
+          "update",
+          "siteurl",
+          "{url}",
+          "--path={docroot}"
+        ]
+      }
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/wp-cli.phar",
+          "option",
+          "update",
+          "home",
+          "{url}",
+          "--path={docroot}"
+        ]
+      }
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/wp-cli.phar",
+          "plugin",
+          "install",
+          "woocommerce",
+          "--activate",
+          "--path={docroot}"
+        ],
+        "timeout": 600
+      }
+    },
+    {
+      "run": {
+        "argv": [
+          "{php_bin}",
+          "{docroot}/wp-cli.phar",
+          "language",
+          "plugin",
+          "install",
+          "woocommerce",
+          "tr_TR",
+          "--path={docroot}"
+        ],
+        "ignore_errors": true,
+        "timeout": 300
+      }
+    },
+    {
+      "delete": "wp-cli.phar"
+    }
+  ],
+  "finish": {
+    "path": "/wp-admin/admin.php?page=wc-admin",
+    "note": "WooCommerce etkin. İlk girişte mağaza kurulum sihirbazı açılır."
+  },
+  "database": true,
+  "version_note": "WordPress + WooCommerce son sürüm"
+}

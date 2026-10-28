@@ -1,0 +1,48 @@
+{
+  "id": "friendica",
+  "name": "Friendica",
+  "badge": "FR",
+  "category": "collab",
+  "tagline": "Merkeziyetsiz sosyal ağ",
+  "description": "Fediverse ile uyumlu, kendi sunucunuzda sosyal ağ.",
+  "homepage": "https://friendi.ca",
+  "license": "AGPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "url": "https://files.friendi.ca/friendica-full-2026.05.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [
+    {
+      "copy": {
+        "from": ".htaccess-dist",
+        "to": ".htaccess",
+        "optional": true
+      }
+    },
+    {
+      "mkdir": {
+        "path": "view/smarty3",
+        "mode": "0755"
+      }
+    }
+  ],
+  "finish": {
+    "path": "/install",
+    "note": "Friendica cron olmadan çalışmaz: */10 * * * * php bin/console.php worker (site kullanıcısıyla)."
+  },
+  "database": true,
+  "version_note": "2026.05",
+  "deny": [
+    "config",
+    "bin",
+    "src",
+    "friendica.log"
+  ]
+}

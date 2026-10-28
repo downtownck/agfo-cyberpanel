@@ -1,0 +1,33 @@
+{
+  "id": "dotclear",
+  "name": "Dotclear",
+  "badge": "DC",
+  "category": "cms",
+  "tagline": "Fransız kökenli hafif blog motoru",
+  "description": "Çok bloglu yayın; PHP 8.2+.",
+  "homepage": "https://dotclear.org",
+  "license": "AGPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "url": "https://download.dotclear.org/latest/dotclear-2.39.3.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/admin/install/",
+    "note": "Dosyalar ve veritabanı hazırlandı. Kuruluma devam etmek için aşağıdaki adrese gidin; veritabanı bilgileri bu ekranda."
+  },
+  "database": true,
+  "version_note": "2.39.3",
+  "deny": [
+    "cache",
+    "var",
+    "inc"
+  ]
+}

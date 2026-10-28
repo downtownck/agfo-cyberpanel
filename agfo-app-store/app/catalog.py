@@ -28,12 +28,17 @@ REQUIRED = ("id", "name", "category", "download")
 CATEGORIES = {
     "cms": "İçerik yönetimi",
     "shop": "E-ticaret",
-    "learning": "Eğitim",
     "crm": "CRM ve iş",
-    "analytics": "Analitik",
-    "collab": "İşbirliği",
+    "finance": "Muhasebe ve fatura",
+    "project": "Proje ve görev",
+    "support": "Destek masası",
+    "learning": "Eğitim",
+    "wiki": "Wiki ve bilgi",
     "forum": "Forum",
-    "framework": "Çatı (framework)",
+    "collab": "İşbirliği",
+    "files": "Dosya ve medya",
+    "mail": "E-posta",
+    "analytics": "Analitik ve anket",
     "tools": "Araçlar",
 }
 
@@ -49,12 +54,16 @@ def _validate(data, path):
     if data.get("install_mode", "web") not in ("cli", "web"):
         raise ValueError("%s: install_mode cli veya web olmali" % data["id"])
     download = data.get("download") or {}
-    if download.get("github"):
+    if download.get("page"):
+        if not str(download["page"]).startswith("https://") or not download.get("regex"):
+            raise ValueError("%s: indirme sayfasi https olmali ve regex verilmeli" % data["id"])
+        re.compile(download["regex"])
+    elif download.get("github"):
         if not re.match(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", str(download["github"])):
             raise ValueError("%s: gecersiz github deposu" % data["id"])
     elif not str(download.get("url", "")).startswith("https://"):
         raise ValueError("%s: indirme adresi https olmali" % data["id"])
-    if download.get("format") not in ("tar.gz", "tgz", "zip", "tar.bz2"):
+    if download.get("format") not in ("tar.gz", "tgz", "zip", "tar.bz2", "file"):
         raise ValueError("%s: desteklenmeyen arsiv bicimi" % data["id"])
     return data
 
@@ -116,6 +125,8 @@ def get(app_id):
 
 def public_list():
     """Arayuze gonderilecek sade liste (adimlar haric)."""
+    import health
+    report = health.load()
     out = []
     for item in load():
         out.append({
@@ -135,6 +146,9 @@ def public_list():
             "tags": item.get("tags", []),
             "version_note": item.get("version_note", ""),
             "download_override": bool(item.get("download_override")),
+            "web_root": item.get("web_root", ""),
+            "health": health.badge(item["id"], report),
+            "health_detail": _health_line(report.get(item["id"]) or {}),
         })
     return out
 
@@ -146,3 +160,13 @@ def categories():
         used[key] = used.get(key, 0) + 1
     return [{"id": k, "label": CATEGORIES.get(k, k), "count": v}
             for k, v in sorted(used.items(), key=lambda kv: CATEGORIES.get(kv[0], kv[0]))]
+
+
+def _health_line(entry):
+    trial, package = entry.get("trial") or {}, entry.get("package") or {}
+    if trial:
+        return "deneme kurulumu: %s" % (trial.get("detail") or trial.get("status"))
+    if package:
+        bad = [c["text"] for c in package.get("checks", []) if c.get("level") != "ok"]
+        return "paket testi: %s" % ("; ".join(bad[:2]) if bad else "sorunsuz")
+    return ""

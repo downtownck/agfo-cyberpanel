@@ -1,0 +1,29 @@
+{
+  "id": "textpattern",
+  "name": "Textpattern",
+  "badge": "TX",
+  "category": "cms",
+  "tagline": "Zarif ve esnek blog/CMS",
+  "description": "Yazı odaklı siteler ve dergiler için.",
+  "homepage": "https://textpattern.com",
+  "license": "GPL-2.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.1"
+  },
+  "download": {
+    "github": "textpattern/textpattern",
+    "asset": "^textpattern-[\\d.]+\\.zip$",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/textpattern/setup/",
+    "note": "Kurulum bitince textpattern/setup/ klasörünü silin."
+  },
+  "database": true,
+  "version_note": "GitHub'daki son kararlı sürüm"
+}

@@ -32,10 +32,11 @@ import installer
 import ai
 import providers
 import tools
+import health
 import store
 
 APP_NAME = "AGFO App Store"
-APP_VERSION = "1.0.4"
+APP_VERSION = "1.1.0"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -293,6 +294,11 @@ class Handler(BaseHTTPRequestHandler):
             if m:
                 return self.reply(200, {"ok": True, "log": tools.logs(m.group(1),
                                         (query.get("n") or ["150"])[0])})
+            if path == "/api/health":
+                return self.reply(200, {"ok": True, "report": health.load(),
+                                        "test_domain": health.test_domain(),
+                                        "php": health.installed_php(),
+                                        "running": health.RUN.get("job") or ""})
             if path == "/api/ai/status":
                 return self.reply(200, dict(ok=True, **ai.status()))
             if path == "/api/catalog/proposals":
@@ -355,6 +361,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self.api_install()
             if path == "/api/uninstall":
                 return self.api_uninstall()
+            if path == "/api/health/start":
+                d = self.body_json()
+                ids = [str(x) for x in (d.get("apps") or []) if isinstance(x, str)][:200]
+                return self.reply(200, {"ok": True, "job": health.start(str(d.get("mode", "")), ids or None)})
+            if path == "/api/health/test-domain":
+                d = self.body_json()
+                dom = str(d.get("domain", "")).strip().lower().rstrip(".")
+                if dom and not installer.DOMAIN_RE.match(dom):
+                    return self.fail(400, "gecersiz alan adi")
+                CFG.set(("cyberpanel", "test_domain"), dom)
+                store.audit("health_test_domain", {"domain": dom})
+                return self.reply(200, {"ok": True, "test_domain": dom})
             if path == "/api/tools/action":
                 d = self.body_json()
                 return self.reply(200, tools.action(d.get("slug", ""), d.get("action", "")))
@@ -650,7 +668,19 @@ def main():
         scheme = "https"
     stale = store.recover_stale_jobs()
     if stale:
-        log.warning("%d yarim kalmis is hata olarak kapatildi", stale)
+        log.warning("%d yarim kalmis is hata olarak kapatildi", len(stale))
+
+    def _recover():
+        # Sunucu dinlemeye baslasin diye arka planda: yarim kurulumlari geri al,
+        # test sitesinde asili kalan deneme kurulumlarini temizle.
+        try:
+            n = installer.recover_interrupted(stale, log.warning)
+            if n:
+                log.warning("%d yarim kurulum geri alindi", n)
+            health.cleanup_orphans(log.warning)
+        except Exception:
+            log.exception("baslangic kurtarmasi")
+    threading.Thread(target=_recover, daemon=True, name="recover").start()
     try:
         installer.CyberPanel(lambda m: None).cli()
     except Exception:

@@ -1,0 +1,31 @@
+{
+  "id": "humhub",
+  "name": "HumHub",
+  "badge": "HH",
+  "category": "collab",
+  "tagline": "Kurum içi sosyal ağ ve intranet",
+  "description": "Ekip alanları, paylaşımlar, etkinlikler ve modüller.",
+  "homepage": "https://www.humhub.com",
+  "license": "AGPL-3.0",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "url": "https://download.humhub.com/downloads/install/humhub-1.19.3.tar.gz",
+    "format": "tar.gz",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/index.php?r=installer",
+    "note": "Kuyruk ve zamanlanmış görevler için her dakika: php protected/yii queue/run ve php protected/yii cron/run."
+  },
+  "database": true,
+  "version_note": "1.19.3",
+  "deny": [
+    "protected"
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "id": "typemill",
+  "name": "Typemill",
+  "badge": "TM",
+  "category": "cms",
+  "tagline": "Markdown tabanlı doküman ve el kitabı sitesi",
+  "description": "Kullanım kılavuzları ve dokümantasyon için; veritabanı gerekmez.",
+  "homepage": "https://typemill.net",
+  "license": "MIT",
+  "install_mode": "web",
+  "tags": [],
+  "requires": {
+    "php": "8.2"
+  },
+  "download": {
+    "page": "https://typemill.net/starter-guide/download",
+    "regex": "(https://typemill\\.net/media/files/typemill-\\d+\\.zip)",
+    "format": "zip",
+    "strip": 1
+  },
+  "fields": [],
+  "steps": [],
+  "finish": {
+    "path": "/setup",
+    "note": "Dosyalar hazır. Kurulumu aşağıdaki adresten tamamlayın."
+  },
+  "database": false,
+  "version_note": "son sürüm (indirme sayfasından)",
+  "deny": [
+    "settings",
+    "data",
+    "cache",
+    "system"
+  ]
+}
