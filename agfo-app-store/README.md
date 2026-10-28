@@ -1,4 +1,4 @@
-# AGFO App Store 1.1.0
+# AGFO App Store 1.1.1
 
 CyberPanel için tek tıkla uygulama kurulumu. Uygulamayı seçersiniz; mağaza
 CyberPanel üzerinden yeni site (veya alt alan adı) açar, Let's Encrypt SSL
@@ -15,7 +15,7 @@ AGFO Package Runner ile ZIP'i yükleyin; `install.sh` root olarak çalışır.
 Elle:
 
 ```bash
-unzip agfo-app-store-1.1.0.zip && cd agfo-app-store-1.1.0 && bash install.sh
+unzip agfo-app-store-1.1.1.zip && cd agfo-app-store-1.1.1 && bash install.sh
 ```
 
 Kurulum sonunda panel adresi, menü linki ve (ilk kurulumda) panel şifresi
@@ -145,6 +145,24 @@ bozuksa site ya da veritabanı hiç açılmaz. Sonraki bir adım başarısız ol
 o kurulumun oluşturduğu her şey geri alınır: veritabanı, alt dizin, veri
 klasörleri ve (siteyi bu kurulum açtıysa) site. Önceden var olan site ve
 dosyalara dokunulmaz.
+
+## Kurulum önerileri
+
+Kurulum penceresi açıldığında sunucu incelenir ve öneriler kart olarak gelir;
+birine tıklamak alanları doldurur:
+
+- **Yeni alt alan adı** (ör. `moodle.alanadi.com`): uygulamaya ayrı bir ev.
+  DNS'in bu sunucuyu gösterip göstermediği belirtilir.
+- **Boş mevcut site** ya da **dolu sitede alt dizin** (`/moodle`): sitedeki
+  kurulumlar ve kök dizinin doluluğu dikkate alınır.
+- **PHP sürümü**: sunucudaki her `lsphp`, uygulamanın desteklediği aralığa
+  (`php`–`php_max`) ve gereken PHP eklentilerinin (`php -m`) o sürümde kurulu
+  olup olmadığına göre değerlendirilir; uygun olanların en yenisi seçilir.
+  Eksik eklenti varsa hangi paketin kurulacağı yazılır (ör. `lsphp82-sodium`).
+- **Mevcut sitenin PHP'si uymuyorsa**: kurulum başlamadan durur. İsterseniz
+  "sitenin PHP sürümünü değiştir" seçeneğiyle sürüm değiştirilir; kurulum
+  başarısız olursa eski sürüm geri yüklenir.
+- Son kullanılan e-posta hatırlanır.
 
 ## Katalog sağlık testi
 

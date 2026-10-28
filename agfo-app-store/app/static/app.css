@@ -182,3 +182,17 @@ select { width: 100%; background: #0b1016; color: inherit; border: 1px solid #26
 .appcard-head .hbadge { margin-left: auto; align-self: flex-start; }
 #health-table td.det { font-size: 12px; color: #9aa4b2; max-width: 420px; }
 #health-table .tool-actions { justify-content: flex-end; }
+
+.suggest { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin: 4px 0 14px; }
+.suggest .sg { text-align: left; background: #0f1620; border: 1px solid #263241; border-radius: 10px; padding: 9px 11px;
+  cursor: pointer; color: inherit; font: inherit; }
+.suggest .sg:hover { border-color: #3b5573; }
+.suggest .sg.active { border-color: #2dd4bf; box-shadow: 0 0 0 1px #2dd4bf inset; }
+.suggest .sg.off { opacity: .45; cursor: not-allowed; }
+.suggest .sg b { display: block; font-size: 13px; word-break: break-all; }
+.suggest .sg .k { font-size: 11px; color: #8b97a7; display: flex; gap: 6px; align-items: center; margin-bottom: 3px; }
+.suggest .sg .n { font-size: 11.5px; color: #9aa4b2; margin-top: 4px; }
+.suggest .rec { background: #12301f; color: #a9f0c4; border-radius: 999px; padding: 0 7px; font-size: 10.5px; }
+.siteinfo { font-size: 12px; color: #b6c2d1; background: #0f1620; border: 1px solid #263241; border-radius: 8px; padding: 8px 10px; margin: -4px 0 10px; }
+.siteinfo.warn { border-color: #5a4a22; color: #ffe7b0; background: #2a2414; }
+.overlay .card.wide { max-height: 94vh; overflow-y: auto; }

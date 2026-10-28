@@ -10,7 +10,8 @@
   "install_mode": "web",
   "tags": [],
   "requires": {
-    "php": "8.2"
+    "php": "8.2",
+    "php_max": "8.3"
   },
   "download": {
     "github": "thirtybees/thirtybees",

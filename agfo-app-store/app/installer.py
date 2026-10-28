@@ -71,6 +71,48 @@ def _ver(text):
         return (0, 0)
 
 
+_MODULES = {}
+
+
+def php_modules(version):
+    """Bir lsphp surumunde yuklu PHP eklentileri (kucuk harf). Bulunamazsa None."""
+    if version in _MODULES:
+        return _MODULES[version]
+    try:
+        binary = php_binary(version)
+    except InstallError:
+        return None
+    try:
+        proc = subprocess.run([binary, "-m"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=20)
+        mods = {l.strip().lower() for l in proc.stdout.decode("utf-8", "replace").splitlines()
+                if l.strip() and not l.startswith("[")}
+    except Exception:
+        return None
+    _MODULES[version] = mods
+    return mods
+
+
+def missing_extensions(app, version):
+    need = [e.lower() for e in ((app.get("requires") or {}).get("extensions") or [])]
+    mods = php_modules(version)
+    if mods is None:
+        return []
+    aliases = {"xml": ("xml", "libxml", "simplexml"), "pdo_mysql": ("pdo_mysql",), "mysqli": ("mysqli",)}
+    return [e for e in need if not any(a in mods for a in aliases.get(e, (e,)))]
+
+
+def php_in_range(app, version):
+    req = app.get("requires") or {}
+    lo, hi = req.get("php") or "0.0", req.get("php_max") or "99.9"
+    return _ver(lo) <= _ver(version) <= _ver(hi)
+
+
+def ext_hint(version, missing):
+    v = version.replace(".", "")
+    return "CyberPanel > PHP > Install Extensions bolumunden lsphp%s icin kurun: %s" % (
+        v, ", ".join("lsphp%s-%s" % (v, m) for m in missing))
+
+
 def site_php_version(domain):
     """Mevcut sitenin OpenLiteSpeed'de calistigi PHP surumu (ornek '8.2')."""
     vhosts = os.environ.get("AGFO_STORE_VHOST_DIR", "/usr/local/lsws/conf/vhosts")
@@ -927,6 +969,11 @@ def run_job(job):
         created_site = cp.create_website(domain, clean["email"], clean["php"])
         rb["site"] = created_site
         persist()
+        if clean.get("change_site_php") and not created_site:
+            cp.change_php(domain, clean["change_site_php"])
+            rb["php_before"] = clean.get("php_before")
+            persist()
+            job.log("site PHP %s -> %s yapildi" % (clean.get("php_before"), clean["change_site_php"]))
         docroot_base = HOME_BASE + "/%s/public_html" % domain
         docroot = docroot_base if clean["path"] == "/" else os.path.join(docroot_base, clean["path"].lstrip("/"))
         if not os.path.isdir(docroot_base):
@@ -1027,6 +1074,10 @@ def run_job(job):
         })
         rb.clear()
         store.update_job(job.id, status="done", finished=int(time.time()), result=result, rollback={})
+        try:
+            store.CFG.set(("cyberpanel", "last_email"), clean.get("email", ""))
+        except Exception:
+            pass
         store.audit("install", {"app": app["id"], "domain": domain, "path": clean["path"]})
         job.log("KURULUM TAMAM: %s" % result["url"])
 
@@ -1111,9 +1162,15 @@ def rollback(cp, rb, job, domain):
     onceden dolu dizin ya da baska kurulumun veritabani asla silinmez.
     Geri almadaki bir hata asil hatayi gizlemez; gunluge yazilir.
     """
-    if not rb or not any(rb.get(k) for k in ("site", "db", "docroot_dir", "docroot_clean", "data_dirs")):
+    if not rb or not any(rb.get(k) for k in ("site", "db", "docroot_dir", "docroot_clean", "data_dirs", "php_before")):
         return
     job.log("geri aliniyor: bu kurulumun olusturdugu kaynaklar siliniyor")
+    if rb.get("php_before") and not rb.get("site"):
+        try:
+            cp.change_php(domain, rb["php_before"])
+            job.log("  site PHP %s'e geri alindi" % rb["php_before"])
+        except InstallError as exc:
+            job.log("  UYARI: site PHP surumu geri alinamadi (%s): %s" % (rb["php_before"], exc))
     if rb.get("site"):
         # Site bu is tarafindan acildiysa dosyalari ve veritabanlari onunla gider.
         try:
@@ -1202,21 +1259,40 @@ def start_install(app_id, params):
     if app.get("root_only") and clean["path"] != "/":
         raise InstallError("%s alt dizine kurulamaz; kendi alan adinin ya da alt alan adinin "
                            "kokune kurun (Alt dizin: /)." % app["name"])
-    need = str((app.get("requires") or {}).get("php") or "")
+    req = app.get("requires") or {}
+    need, top = str(req.get("php") or ""), str(req.get("php_max") or "")
+    rng = ("PHP %s-%s" % (need, top)) if top else ("PHP %s veya ustu" % need)
+    clean["change_site_php"] = ""
     if os.path.isdir(HOME_BASE + "/%s" % clean["domain"]):
         # Mevcut site: uygulama sitenin KENDI PHP surumuyle calisir.
         current = site_php_version(clean["domain"])
-        if current:
-            if need and _ver(current) < _ver(need):
+        fits = lambda v: php_in_range(app, v) and not missing_extensions(app, v)
+        if current and not fits(current):
+            target = str(params.get("change_site_php") or "").strip()
+            if target and re.match(r"^\d\.\d$", target) and fits(target):
+                php_binary(target)
+                clean["change_site_php"] = target
+                clean["php_before"] = current
+                clean["php"] = target
+            else:
+                why = ("PHP %s'te eksik eklenti: %s" % (current, ", ".join(missing_extensions(app, current)))
+                       if php_in_range(app, current) else "su an PHP %s kullaniyor" % current)
                 raise InstallError(
-                    "%s PHP %s veya ustunu ister; %s su an PHP %s kullaniyor. "
-                    "CyberPanel > Websites > %s > PHP surumunu degistirin ya da "
-                    "uygulamayi yeni bir alt alan adina kurun."
-                    % (app["name"], need, clean["domain"], current, clean["domain"]))
+                    "%s %s ister; %s %s. Kurulum penceresinde 'sitenin PHP surumunu degistir' "
+                    "secenegini isaretleyin, eklentiyi kurun ya da uygulamayi yeni bir alt alan "
+                    "adina kurun." % (app["name"], rng, clean["domain"], why))
+        elif current:
             clean["php"] = current
-    elif need and _ver(clean["php"]) < _ver(need):
-        clean["php"] = need          # yeni site: gereken surumle acilir
-    php_binary(clean["php"])         # o surum sunucuda var mi? yoksa simdi reddet
+    elif not php_in_range(app, clean["php"]):
+        if need and _ver(clean["php"]) < _ver(need):
+            clean["php"] = need          # yeni site: gereken surumle acilir
+        elif top and _ver(clean["php"]) > _ver(top):
+            clean["php"] = top
+    php_binary(clean["php"])             # o surum sunucuda var mi? yoksa simdi reddet
+    missing = missing_extensions(app, clean["php"])
+    if missing:
+        raise InstallError("%s icin PHP %s'te eksik eklenti: %s. %s" % (
+            app["name"], clean["php"], ", ".join(missing), ext_hint(clean["php"], missing)))
     limit = int(store.CFG.get("limits", "max_concurrent_jobs", default=2) or 2)
     with _run_lock:
         if RUNNING["count"] >= limit:

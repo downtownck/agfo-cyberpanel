@@ -297,16 +297,24 @@ def trial_install(app, log):
     try:
         result["stage"] = "test sitesi"
         domain = ensure_test_site(log)
-        # Uygulama test sitesinden yuksek PHP istiyorsa test sitesini gecici olarak yukselt.
-        need = (app.get("requires") or {}).get("php") or ""
+        # Test sitesinin PHP'si uygulamaya uymuyorsa (aralik ya da eksik eklenti)
+        # en uygun kurulu surume gecici olarak gecir.
+        import suggest
         current = installer.site_php_version(domain) or ""
-        if need and current and _ver(need) > _ver(current):
-            if need not in installed_php():
-                result["detail"] = "sunucuda PHP %s yok; deneme yapilamadi" % need
+        if current and not (installer.php_in_range(app, current)
+                            and not installer.missing_extensions(app, current)):
+            opts = suggest.php_options(app)
+            target = suggest.best_php(app, opts)
+            if not target:
+                why = "; ".join("%s: %s" % (o["version"], o["reason"]) for o in opts if o["reason"])
+                result["detail"] = "sunucuda uygun PHP yok (%s)" % (why or "kurulu surum yok")
+                hint = [o["hint"] for o in opts if o["hint"]]
+                if hint:
+                    result["detail"] += ". " + hint[-1]
                 return result
-            installer.CyberPanel(log).change_php(domain, need)
+            installer.CyberPanel(log).change_php(domain, target)
             restore_php = current
-            log("test sitesi gecici olarak PHP %s yapildi" % need)
+            log("test sitesi gecici olarak PHP %s yapildi" % target)
         result["stage"] = "kurulum"
         job_id = _start_with_retry(installer.start_install, app["id"], _params_for(app, domain, path))
         log("deneme kurulumu basladi: %s%s (is %s)" % (domain, path, job_id))

@@ -16,7 +16,8 @@
       "intl",
       "zip",
       "gd"
-    ]
+    ],
+    "php_max": "8.3"
   },
   "download": {
     "github": "GibbonEdu/core",

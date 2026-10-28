@@ -16,12 +16,16 @@
   "requires": {
     "php": "8.1",
     "extensions": [
-      "mysqli",
-      "gd",
+      "sodium",
       "intl",
       "zip",
-      "xml"
-    ]
+      "mbstring",
+      "curl",
+      "gd",
+      "xml",
+      "soap"
+    ],
+    "php_max": "8.3"
   },
   "download": {
     "url": "https://download.moodle.org/download.php/direct/stable405/moodle-latest-405.tgz",
@@ -93,5 +97,5 @@
     "note": "Moodle hazır. Not: Moodle tarayıcı tarafında da max_input_vars ≥ 5000 ister; OpenLiteSpeed bunu site bazında ayarlatmaz. Sunucunun PHP ayarında (CyberPanel > PHP > Edit PHP Configs) max_input_vars değerini 5000 yapın; aksi halde Moodle güncellemeleri bu uyarıda durur."
   },
   "database": true,
-  "version_note": "4.5 LTS (son yama)"
+  "version_note": "4.5 LTS (son yama) · PHP 8.1–8.3"
 }

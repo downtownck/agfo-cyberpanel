@@ -17,7 +17,8 @@
       "gd",
       "curl",
       "mbstring"
-    ]
+    ],
+    "php_max": "8.4"
   },
   "download": {
     "url": "https://assets.prestashop3.com/dst/edition/corporate/9.0.0-1.0/prestashop_edition_classic_version_9.0.0-1.0.zip?source=agfo-app-store",

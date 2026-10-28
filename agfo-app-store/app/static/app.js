@@ -94,13 +94,16 @@
   }
 
   /* ---------------- kurulum penceresi ---------------- */
+  var SUG = null;
   function openInstall(app) {
-    CURRENT = app;
+    CURRENT = app; SUG = null;
     show('im-error', '');
     $('im-title').textContent = app.name + ' kur';
     $('im-desc').textContent = app.description || app.tagline || '';
-    $('im-php').value = (STATE.cyberpanel && STATE.cyberpanel.default_php) || '8.2';
-    $('im-path').value = '/';
+    $('im-domain').value = ''; $('im-path').value = '/';
+    $('im-site-info').hidden = true; $('im-php-change-row').hidden = true; $('im-php-change').checked = false;
+    $('im-suggest').innerHTML = '<div class="muted"><span class="spin"></span> sunucu inceleniyor, kurulum yeri öneriliyor…</div>';
+    $('im-php').innerHTML = ''; $('im-php-hint').textContent = '';
     $('im-note').textContent = app.install_mode === 'cli'
       ? 'Kurulum sonunda uygulama kullanıma hazır olacak.'
       : 'Dosyalar ve veritabanı hazırlanır, kurulumu tarayıcıdan tamamlarsınız.';
@@ -115,14 +118,98 @@
       row.appendChild(lab); row.appendChild(input);
       box.appendChild(row);
     });
-    if (app.requires && app.requires.php) {
-      var hint = el('div', 'muted', 'En az PHP ' + app.requires.php +
-        (app.version_note ? ' · ' + app.version_note : ''));
-      hint.style.fontSize = '11.5px';
-      box.appendChild(hint);
-    }
     $('install-modal').hidden = false;
-    $('im-domain').focus();
+    api('/api/suggest?app=' + encodeURIComponent(app.id)).then(function (res) {
+      if (CURRENT !== app) return;
+      SUG = res;
+      renderSuggestions(res);
+      fillPhp(res.php, res.best_php);
+      var dl = $('im-sites'); dl.innerHTML = '';
+      (res.sites || []).forEach(function (s) { var o = el('option'); o.value = s.domain; dl.appendChild(o); });
+      if (!$('im-email').value) $('im-email').value = res.email || '';
+      (app.fields || []).forEach(function (f) {
+        var inp = $('f-' + f.id);
+        if (inp && !inp.value && f.type === 'email') inp.value = res.email || '';
+      });
+      var first = (res.suggestions || []).filter(function (x) { return x.viable; })[0];
+      if (first) applySuggestion(first);
+      else $('im-domain').focus();
+    }).catch(function (err) {
+      $('im-suggest').innerHTML = ''; fillPhp([], null);
+      $('im-php').appendChild(el('option', '', (STATE.cyberpanel && STATE.cyberpanel.default_php) || '8.2'));
+      toast('Öneriler alınamadı: ' + err.message, 5000);
+    });
+  }
+
+  function fillPhp(opts, best) {
+    var sel = $('im-php'); sel.innerHTML = '';
+    (opts || []).forEach(function (o) {
+      var label = o.version + (o.version === best ? ' (önerilen)' : '') + (o.ok ? '' : ' — ' + o.reason);
+      var opt = el('option', '', label); opt.value = o.version; opt.disabled = !o.ok;
+      if (o.version === best) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    var bad = (opts || []).filter(function (o) { return o.missing && o.missing.length; });
+    $('im-php-hint').textContent = !best && bad.length ? bad[bad.length - 1].hint :
+      (SUG && SUG.php_range ? 'Uygulama: PHP ' + SUG.php_range.min + (SUG.php_range.max ? '–' + SUG.php_range.max : '+') : '');
+  }
+
+  function renderSuggestions(res) {
+    var box = $('im-suggest'); box.innerHTML = '';
+    (res.suggestions || []).forEach(function (sg) {
+      var b = el('button', 'sg' + (sg.viable ? '' : ' off')); b.type = 'button';
+      var k = el('div', 'k', sg.title);
+      if (sg.recommended) k.appendChild(el('span', 'rec', 'önerilen'));
+      if (sg.kind === 'new_subdomain') k.appendChild(el('span', '', sg.dns_ok ? '· DNS ✓' : '· DNS yok'));
+      b.appendChild(k);
+      b.appendChild(el('b', '', sg.domain + (sg.path !== '/' ? sg.path : '')));
+      b.appendChild(el('div', 'n', (sg.php ? 'PHP ' + sg.php + ' · ' : '') + sg.note));
+      if (sg.viable) b.addEventListener('click', function () { applySuggestion(sg); });
+      b._sg = sg; box.appendChild(b);
+    });
+    if (!(res.suggestions || []).length) box.appendChild(el('div', 'muted', 'Öneri yok; alan adını elle girin.'));
+  }
+
+  function applySuggestion(sg) {
+    $('im-domain').value = sg.domain; $('im-path').value = sg.path;
+    Array.prototype.forEach.call(document.querySelectorAll('#im-suggest .sg'), function (b) {
+      b.classList.toggle('active', b._sg === sg);
+    });
+    domainChanged();
+  }
+
+  function domainChanged() {
+    if (!SUG) return;
+    var dom = $('im-domain').value.trim().toLowerCase();
+    var site = (SUG.sites || []).filter(function (s) { return s.domain === dom; })[0];
+    var info = $('im-site-info'), row = $('im-php-change-row');
+    row.hidden = true; $('im-php-change').checked = false;
+    $('im-php').disabled = false;
+    if (!site) {
+      info.hidden = !dom; info.className = 'siteinfo';
+      info.textContent = dom ? 'Yeni site açılır (PHP aşağıdan seçilir).' : '';
+      return;
+    }
+    info.hidden = false;
+    var parts = ['Mevcut site · PHP ' + (site.php || '?')];
+    if (site.apps.length) parts.push('kurulu: ' + site.apps.map(function (a) { return a.app + (a.path !== '/' ? ' (' + a.path + ')' : ''); }).join(', '));
+    else if (!site.root_empty) parts.push('kökte ' + site.root_items + ' öğe var');
+    else parts.push('kök boş');
+    if (!site.root_empty && $('im-path').value.trim() === '/') parts.push('kök dolu: bir alt dizin girin');
+    var phpOpt = (SUG.php || []).filter(function (o) { return o.version === site.php; })[0];
+    var fits = phpOpt && phpOpt.ok;
+    info.className = 'siteinfo' + (fits ? '' : ' warn');
+    if (!fits && site.php) {
+      parts.push('bu uygulama sitenin PHP ' + site.php + ' sürümüyle çalışmaz' + (phpOpt && phpOpt.reason ? ' (' + phpOpt.reason + ')' : ''));
+      if (SUG.best_php) {
+        row.hidden = false;
+        $('im-php-change-text').textContent = 'Sitenin PHP sürümünü ' + site.php + ' → ' + SUG.best_php +
+          ' yap (sitedeki diğer uygulamaları da etkiler; kurulum başarısız olursa geri alınır)';
+      }
+    }
+    info.textContent = parts.join(' · ');
+    // mevcut sitede PHP sitenin kendisidir; secim kutusu bilgi amaclidir
+    if (site.php) { $('im-php').value = fits ? site.php : (SUG.best_php || site.php); $('im-php').disabled = true; }
   }
 
   function startInstall() {
@@ -137,6 +224,9 @@
     (CURRENT.fields || []).forEach(function (f) {
       params[f.id] = ($('f-' + f.id) || {}).value || '';
     });
+    if (!$('im-php-change-row').hidden && $('im-php-change').checked && SUG && SUG.best_php) {
+      params.change_site_php = SUG.best_php;
+    }
     if (!params.domain) { show('im-error', 'Alan adı girin.'); return; }
     if (!params.email) { show('im-error', 'E-posta girin.'); return; }
     var btn = $('im-start'); btn.disabled = true;
@@ -671,6 +761,11 @@
     });
     $('search').addEventListener('input', function () { FILTER.q = this.value; renderGrid(); });
     $('im-start').addEventListener('click', startInstall);
+    $('im-domain').addEventListener('input', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('#im-suggest .sg'), function (b) { b.classList.remove('active'); });
+      domainChanged();
+    });
+    $('im-path').addEventListener('input', domainChanged);
     $('um-start').addEventListener('click', startUninstall);
     $('tr-start').addEventListener('click', startToolRemove);
     $('btn-health-package').addEventListener('click', function () { runHealth('package'); });

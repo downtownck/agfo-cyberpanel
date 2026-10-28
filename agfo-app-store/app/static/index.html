@@ -175,13 +175,16 @@
     </div>
     <div id="im-body">
       <p id="im-desc" class="muted"></p>
+      <div id="im-suggest" class="suggest"></div>
       <div class="row two">
-        <div><label for="im-domain">Alan adı</label><input id="im-domain" type="text" placeholder="ornek.com" spellcheck="false"></div>
+        <div><label for="im-domain">Alan adı</label><input id="im-domain" type="text" placeholder="ornek.com" spellcheck="false" list="im-sites" autocomplete="off"><datalist id="im-sites"></datalist></div>
         <div><label for="im-path">Alt dizin</label><input id="im-path" type="text" value="/" spellcheck="false"></div>
       </div>
+      <div id="im-site-info" class="siteinfo" hidden></div>
+      <label class="check" id="im-php-change-row" hidden><input type="checkbox" id="im-php-change"> <span id="im-php-change-text"></span></label>
       <div class="row two">
         <div><label for="im-email">Site e-postası</label><input id="im-email" type="email" placeholder="ad@alanadi.com"></div>
-        <div><label for="im-php">PHP</label><input id="im-php" type="text"></div>
+        <div><label for="im-php">PHP</label><select id="im-php"></select><div id="im-php-hint" class="muted small-note"></div></div>
       </div>
       <div id="im-fields"></div>
       <div id="im-error" class="error" hidden></div>

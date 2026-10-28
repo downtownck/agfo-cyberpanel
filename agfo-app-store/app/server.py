@@ -33,10 +33,11 @@ import ai
 import providers
 import tools
 import health
+import suggest
 import store
 
 APP_NAME = "AGFO App Store"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.1.1"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -294,6 +295,11 @@ class Handler(BaseHTTPRequestHandler):
             if m:
                 return self.reply(200, {"ok": True, "log": tools.logs(m.group(1),
                                         (query.get("n") or ["150"])[0])})
+            if path == "/api/suggest":
+                app = catalog.get((query.get("app") or [""])[0])
+                if not app:
+                    return self.fail(404, "uygulama bulunamadi")
+                return self.reply(200, dict(ok=True, **suggest.for_app(app)))
             if path == "/api/health":
                 return self.reply(200, {"ok": True, "report": health.load(),
                                         "test_domain": health.test_domain(),
