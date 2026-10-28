@@ -575,6 +575,100 @@
       $('text-modal').hidden = false; loadTools();
     }).catch(function (err) { b.disabled = false; b.textContent = 'Kaldır'; show('tr-error', err.message); });
   }
+  /* ---------------- CyberPanel menu editoru ---------------- */
+  var MENU = { rows: [], icons: [], sugg: [], dirty: false };
+  function loadMenu() {
+    var tb = $('menu-table').querySelector('tbody');
+    tb.innerHTML = '<tr><td colspan="6" class="empty"><span class="spin"></span></td></tr>';
+    $('menu-msg').textContent = '';
+    api('/api/menu').then(function (res) {
+      MENU.rows = (res.entries || []).map(function (e) {
+        return { orig: e.label, label: e.label, href: e.href, icon: e.icon, newtab: !!e.newtab };
+      });
+      MENU.icons = res.icons || []; MENU.sugg = res.suggestions || []; MENU.dirty = false;
+      var notes = $('menu-notes'); notes.innerHTML = '';
+      if (!(res.files || []).length) {
+        notes.appendChild(el('div', 'error', 'CyberPanel şablonlarında AGFO menü grubu bulunamadı (' + (res.searched || []).join(', ') + '). Menüye en az bir AGFO girdisini agfo-ssh-menu paketiyle ekleyin.'));
+      }
+      MENU.sugg.forEach(function (s) { if (s.note) notes.appendChild(el('div', 'warn', s.label + ': ' + s.note)); });
+      var sel = $('menu-backups'); sel.innerHTML = '';
+      (res.backups || []).forEach(function (b) {
+        var t = b.stamp;
+        var o = el('option', '', t.slice(6, 8) + '.' + t.slice(4, 6) + '.' + t.slice(0, 4) + ' ' + t.slice(9, 11) + ':' + t.slice(11, 13) + ':' + t.slice(13, 15) + ' (' + b.files + ' dosya)');
+        o.value = t; sel.appendChild(o);
+      });
+      if (!(res.backups || []).length) sel.appendChild(el('option', '', 'yedek yok'));
+      $('btn-menu-restore').disabled = !(res.backups || []).length;
+      renderMenu();
+    }).catch(function (err) { tb.innerHTML = ''; toast(err.message, 6000); });
+  }
+  function menuDirty() { MENU.dirty = true; $('menu-msg').textContent = 'kaydedilmemiş değişiklik var'; }
+  function renderMenu() {
+    var tb = $('menu-table').querySelector('tbody'); tb.innerHTML = '';
+    MENU.rows.forEach(function (r, i) {
+      var tr = el('tr');
+      var mv = el('td', 'menu-move');
+      var up = el('button', 'btn small', '▲'); up.title = 'Yukarı'; up.disabled = i === 0;
+      up.addEventListener('click', function () { var t = MENU.rows[i - 1]; MENU.rows[i - 1] = r; MENU.rows[i] = t; menuDirty(); renderMenu(); });
+      var dn = el('button', 'btn small', '▼'); dn.title = 'Aşağı'; dn.disabled = i === MENU.rows.length - 1;
+      dn.addEventListener('click', function () { var t = MENU.rows[i + 1]; MENU.rows[i + 1] = r; MENU.rows[i] = t; menuDirty(); renderMenu(); });
+      mv.appendChild(up); mv.appendChild(dn); tr.appendChild(mv);
+      var lt = el('td'); var li = el('input'); li.type = 'text'; li.value = r.label; li.maxLength = 60;
+      li.addEventListener('input', function () { r.label = li.value; menuDirty(); });
+      lt.appendChild(li); if (!r.orig) lt.appendChild(el('div', 'muted', 'yeni')); tr.appendChild(lt);
+      var ht = el('td'); var hi = el('input'); hi.type = 'text'; hi.value = r.href; hi.spellcheck = false; hi.className = 'mono';
+      hi.addEventListener('input', function () { r.href = hi.value.trim(); menuDirty(); });
+      ht.appendChild(hi);
+      if (/^https?:\/\/\d{1,3}(\.\d{1,3}){3}[:/]/.test(r.href)) ht.appendChild(el('div', 'warn small', 'IP adresi: tarayıcı sertifika uyarısı verebilir'));
+      tr.appendChild(ht);
+      var it = el('td'); var is = el('select');
+      var icons = MENU.icons.slice(); if (r.icon && icons.indexOf(r.icon) < 0) icons.unshift(r.icon);
+      if (!r.icon) is.appendChild(el('option', '', '(yok)'));
+      icons.forEach(function (ic) { var o = el('option', '', ic.replace(/^fa-/, '')); o.value = ic; if (ic === r.icon) o.selected = true; is.appendChild(o); });
+      is.addEventListener('change', function () { r.icon = is.value; menuDirty(); });
+      it.appendChild(is); tr.appendChild(it);
+      var nt = el('td'); var nc = el('input'); nc.type = 'checkbox'; nc.checked = r.newtab;
+      nc.addEventListener('change', function () { r.newtab = nc.checked; menuDirty(); });
+      nt.appendChild(nc); tr.appendChild(nt);
+      var dt = el('td'); var del = el('button', 'btn small danger', 'Sil');
+      del.addEventListener('click', function () { MENU.rows.splice(i, 1); menuDirty(); renderMenu(); });
+      dt.appendChild(del); tr.appendChild(dt);
+      tb.appendChild(tr);
+    });
+    if (!MENU.rows.length) tb.innerHTML = '<tr><td colspan="6" class="empty">Menüde AGFO girdisi yok.</td></tr>';
+  }
+  function menuSuggest() {
+    var n = 0, added = 0;
+    MENU.sugg.forEach(function (s) {
+      var row = MENU.rows.filter(function (r) { return r.label === s.label || r.orig === s.label; })[0];
+      if (row) {
+        if (row.href !== s.href || !row.newtab) { row.href = s.href; row.newtab = true; n++; }
+      } else {
+        MENU.rows.push({ orig: '', label: s.label, href: s.href, icon: s.icon, newtab: true }); added++;
+      }
+    });
+    MENU.rows.forEach(function (r) { if (!r.newtab) { r.newtab = true; n++; } });
+    if (n || added) { menuDirty(); renderMenu(); }
+    toast(n || added ? (n + ' girdi güncellendi, ' + added + ' girdi eklendi — Kaydet ile uygulayın') : 'Menü zaten kurulu panellerle uyumlu');
+  }
+  function menuSave() {
+    var b = $('btn-menu-save'); b.disabled = true;
+    api('/api/menu/save', { entries: MENU.rows.map(function (r) {
+      return { orig: r.orig, label: r.label.trim(), href: r.href, icon: r.icon, newtab: r.newtab };
+    }) }).then(function (res) {
+      b.disabled = false;
+      toast(res.changed.length ? ('Menü kaydedildi' + (res.restarted ? '; CyberPanel yeniden başlıyor, birkaç saniye sonra Ctrl+F5' : '; CyberPanel\'i yeniden başlatın')) : 'Değişiklik yok', 7000);
+      loadMenu();
+    }).catch(function (err) { b.disabled = false; toast(err.message, 8000); });
+  }
+  function menuRestore() {
+    var stamp = $('menu-backups').value; if (!stamp) return;
+    if (!confirm('Menü bu yedekteki hâline döndürülsün mü? (Şimdiki hâl de yedeklenir.)')) return;
+    api('/api/menu/restore', { stamp: stamp }).then(function (res) {
+      toast('Geri yüklendi' + (res.restarted ? '; CyberPanel yeniden başlıyor' : ''), 6000); loadMenu();
+    }).catch(function (err) { toast(err.message, 7000); });
+  }
+
   function openTab(name) {
     var tab = document.querySelector('.tab[data-tab="' + name + '"]'); if (tab) tab.click();
   }
@@ -768,6 +862,10 @@
     $('im-path').addEventListener('input', domainChanged);
     $('um-start').addEventListener('click', startUninstall);
     $('tr-start').addEventListener('click', startToolRemove);
+    $('btn-menu-add').addEventListener('click', function () { MENU.rows.push({ orig: '', label: '', href: 'https://', icon: 'fa-link', newtab: true }); menuDirty(); renderMenu(); });
+    $('btn-menu-suggest').addEventListener('click', menuSuggest);
+    $('btn-menu-save').addEventListener('click', menuSave);
+    $('btn-menu-restore').addEventListener('click', menuRestore);
     $('btn-health-package').addEventListener('click', function () { runHealth('package'); });
     $('btn-health-trial').addEventListener('click', function () { runHealth('trial'); });
     $('btn-health-domain').addEventListener('click', function () {
@@ -828,7 +926,7 @@
         $('pane-' + tab.dataset.tab).classList.add('active');
         if (tab.dataset.tab === 'jobs') loadJobs();
         if (tab.dataset.tab === 'installed') loadInstalls();
-        if (tab.dataset.tab === 'tools') loadTools();
+        if (tab.dataset.tab === 'tools') { loadTools(); loadMenu(); }
         if (tab.dataset.tab === 'settings') { loadAI(); loadOverrides(); loadHealth(); }
       });
     });

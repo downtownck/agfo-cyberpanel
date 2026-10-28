@@ -196,3 +196,13 @@ select { width: 100%; background: #0b1016; color: inherit; border: 1px solid #26
 .siteinfo { font-size: 12px; color: #b6c2d1; background: #0f1620; border: 1px solid #263241; border-radius: 8px; padding: 8px 10px; margin: -4px 0 10px; }
 .siteinfo.warn { border-color: #5a4a22; color: #ffe7b0; background: #2a2414; }
 .overlay .card.wide { max-height: 94vh; overflow-y: auto; }
+/* menu editoru */
+.menu-tbl input[type=text] { width: 100%; min-width: 120px; }
+.menu-tbl td:nth-child(3) input { min-width: 260px; }
+.menu-tbl .menu-move { white-space: nowrap; width: 1%; }
+.menu-tbl .menu-move .btn { padding: 2px 7px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+.warn { margin-top: 8px; padding: 8px 11px; border-radius: var(--radius); border: 1px solid #5a4a22; background: #2a2414; color: #ffe7b0; }
+.warn.small { margin-top: 4px; padding: 3px 7px; font-size: 12px; }
+.menu-restore { margin-top: 6px; align-items: center; }
+.menu-restore select { max-width: 280px; }

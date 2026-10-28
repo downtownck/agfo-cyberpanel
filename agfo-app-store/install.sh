@@ -22,7 +22,7 @@ set -euo pipefail
 
 APP_NAME="AGFO App Store"
 APP_SLUG="agfo-app-store"
-APP_VERSION="1.1.3"
+APP_VERSION="1.2.0"
 INSTALL_DIR="/opt/${APP_SLUG}"
 UNIT_PATH="/etc/systemd/system/${APP_SLUG}.service"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

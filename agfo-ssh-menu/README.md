@@ -1,5 +1,8 @@
 # AGFO CyberPanel menü düzenleyici 1.5.1
 
+> **İpucu:** App Store 1.2.0+ kuruluysa menüyü *Sunucu araçları → CyberPanel menüsü*
+> bölümünden tıklayarak düzenleyebilirsiniz; bu paket ilk kurulum ve otomasyon içindir.
+
 CyberPanel kenar menüsündeki AGFO girdilerini düzenler: girdi **ekler**,
 mevcut girdinin adresini **günceller**, istenmeyen girdiyi **siler**.
 

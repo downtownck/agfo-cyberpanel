@@ -87,6 +87,29 @@
           </table>
         </div>
       </div>
+
+      <div class="panel" id="menu-panel">
+        <h3>CyberPanel menüsü</h3>
+        <p class="muted">Kenar menüdeki AGFO grubunu buradan düzenleyin: ad, adres, ikon, yeni sekme, sıra. Kaydedince eski hâli yedeklenir ve CyberPanel birkaç saniyeliğine yeniden başlar (sayfayı Ctrl+F5 ile yenileyin).</p>
+        <div id="menu-notes"></div>
+        <div class="table-wrap">
+          <table class="tbl menu-tbl" id="menu-table">
+            <thead><tr><th></th><th>Ad</th><th>Adres</th><th>İkon</th><th>Yeni sekme</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="btn-menu-add">+ Girdi ekle</button>
+          <button class="btn" id="btn-menu-suggest" title="Kurulu AGFO panellerinin adreslerini alan adı ve giriş jetonuyla doldurur, eksik olanları ekler">Kurulu panellerden doldur</button>
+          <button class="btn primary" id="btn-menu-save">Kaydet</button>
+          <span id="menu-msg" class="muted"></span>
+        </div>
+        <div class="btn-row menu-restore">
+          <label for="menu-backups" class="muted">Önceki hâl:</label>
+          <select id="menu-backups"></select>
+          <button class="btn small" id="btn-menu-restore">Geri yükle</button>
+        </div>
+      </div>
     </section>
 
     <section class="pane" id="pane-settings">

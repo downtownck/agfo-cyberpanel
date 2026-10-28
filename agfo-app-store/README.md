@@ -1,4 +1,4 @@
-# AGFO App Store 1.1.3
+# AGFO App Store 1.2.0
 
 CyberPanel için tek tıkla uygulama kurulumu. Uygulamayı seçersiniz; mağaza
 CyberPanel üzerinden yeni site (veya alt alan adı) açar, Let's Encrypt SSL
@@ -15,7 +15,7 @@ AGFO Package Runner ile ZIP'i yükleyin; `install.sh` root olarak çalışır.
 Elle:
 
 ```bash
-unzip agfo-app-store-1.1.3.zip && cd agfo-app-store-1.1.3 && bash install.sh
+unzip agfo-app-store-1.2.0.zip && cd agfo-app-store-1.2.0 && bash install.sh
 ```
 
 Kurulum sonunda panel adresi, menü linki ve (ilk kurulumda) panel şifresi
@@ -218,6 +218,27 @@ betik root'a ait değilse ya da başkaları yazabiliyorsa çalıştırılmaz. Ap
 kendini durduramaz ve kaldıramaz; kendi yeniden başlatması 3 saniye ertelenir.
 Kaldırılan bir aracın CyberPanel menü girdisi için menü paketini yeniden
 çalıştırın.
+
+## CyberPanel menü editörü
+
+**Sunucu araçları** sekmesinin altındaki *CyberPanel menüsü* bölümü, kenar menüdeki
+AGFO grubunu (Package Runner, SSH Terminal, File Manager, App Store, Firewall AI ve
+sizin eklediğiniz linkler) doğrudan düzenler:
+
+* Ad, adres, ikon ve **yeni sekme** ayarı; ▲▼ ile sıralama; girdi ekleme/silme.
+* **Kurulu panellerden doldur:** her AGFO panelinin adresini giriş jetonuyla yazar;
+  panel IP ile yayınlanıyorsa ve sertifikası CyberPanel'in alan adını kapsıyorsa
+  alan adına çevirir, kapsamıyorsa hangi paketin yeniden kurulacağını söyler.
+* Kaydetmeden önce şablon yedeklenir; yazılan menü yeniden okunup doğrulanır,
+  tutmazsa yedek geri konur. **Önceki hâl** listesinden tek tıkla geri dönülür
+  (`agfo-ssh-menu/restore.sh` ile aynı yedekler).
+* Grubun dışındaki menüye ve değiştirmediğiniz girdilerin metnine dokunulmaz
+  (`{% url %}` gibi Django etiketli adresler korunur).
+* Kayıttan sonra CyberPanel (lscpd) birkaç saniye içinde yeniden başlatılır;
+  sayfayı Ctrl+F5 ile yenileyin.
+
+Menü en az bir AGFO girdisi içermelidir; hiç yoksa ilk kez `agfo-ssh-menu`
+paketini çalıştırın.
 
 ## Kaldırma
 

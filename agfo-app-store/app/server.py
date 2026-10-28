@@ -31,13 +31,14 @@ import catalog
 import installer
 import ai
 import providers
+import menu
 import tools
 import health
 import suggest
 import store
 
 APP_NAME = "AGFO App Store"
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.2.0"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -291,6 +292,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200, {"ok": True, "installs": store.load_installs()[::-1]})
             if path == "/api/tools":
                 return self.reply(200, {"ok": True, "tools": tools.discover()})
+            if path == "/api/menu":
+                return self.reply(200, dict(ok=True, **menu.read()))
             m = re.match(r"^/api/tools/([a-z0-9-]+)/logs$", path)
             if m:
                 return self.reply(200, {"ok": True, "log": tools.logs(m.group(1),
@@ -379,6 +382,17 @@ class Handler(BaseHTTPRequestHandler):
                 CFG.set(("cyberpanel", "test_domain"), dom)
                 store.audit("health_test_domain", {"domain": dom})
                 return self.reply(200, {"ok": True, "test_domain": dom})
+            if path == "/api/menu/save":
+                d = self.body_json()
+                res = menu.save(d.get("entries"))
+                store.audit("menu_save", {"entries": [e.get("label") for e in (d.get("entries") or []) if isinstance(e, dict)],
+                                          "files": len(res["changed"])})
+                return self.reply(200, dict(ok=True, **res))
+            if path == "/api/menu/restore":
+                d = self.body_json()
+                res = menu.restore(str(d.get("stamp", "")))
+                store.audit("menu_restore", {"stamp": d.get("stamp")})
+                return self.reply(200, dict(ok=True, **res))
             if path == "/api/tools/action":
                 d = self.body_json()
                 return self.reply(200, tools.action(d.get("slug", ""), d.get("action", "")))
@@ -434,7 +448,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200, {"ok": True, "results": installer.verify_catalog()})
             if path == "/api/settings":
                 return self.api_settings()
-        except (installer.InstallError, ai.AIError, tools.ToolError) as exc:
+        except (installer.InstallError, ai.AIError, tools.ToolError, menu.MenuError) as exc:
             return self.fail(400, str(exc))
         except ValueError as exc:
             return self.fail(400, str(exc))
