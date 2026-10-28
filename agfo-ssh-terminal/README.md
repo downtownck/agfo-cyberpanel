@@ -1,4 +1,4 @@
-# AGFO SSH Terminal 1.3.0
+# AGFO SSH Terminal 1.3.2
 
 CyberPanel sunucunuzda çalışan, tarayıcıdan kullanılan **PuTTY tarzı SSH terminali**.
 Sunucuya **root erişimi** verir: hem sunucunun kendi root kabuğunu açar, hem de

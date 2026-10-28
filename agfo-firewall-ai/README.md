@@ -1,4 +1,4 @@
-# AGFO Firewall AI 1.1.0
+# AGFO Firewall AI 1.1.2
 
 Açık kaynak **CrowdSec** motorunun üzerine kurulan, yapay zekâ destekli güvenlik
 duvarı yönetim paneli. Sunucudaki saldırı olaylarını okur, seçtiğiniz AI

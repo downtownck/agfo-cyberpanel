@@ -31,7 +31,7 @@ set -euo pipefail
 
 APP_NAME="AGFO SSH Terminal"
 APP_SLUG="agfo-ssh-terminal"
-APP_VERSION="1.3.1"
+APP_VERSION="1.3.2"
 INSTALL_DIR="/opt/${APP_SLUG}"
 UNIT_PATH="/etc/systemd/system/${APP_SLUG}.service"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -104,6 +104,19 @@ chmod 644 "${INSTALL_DIR}/app/server.py"
 CERT="${AGFO_SSH_CERT:-}"
 KEY="${AGFO_SSH_KEY:-}"
 DOMAIN="${AGFO_SSH_DOMAIN:-}"
+
+# Alan adi verilmediyse CyberPanel'in kendi (8090) sertifikasindan oku: tarayici
+# 8090'i guvenli buluyorsa ayni alan adi bu panel icin de dogru olandir.
+if [ "$TLS" = "1" ] && [ -z "$DOMAIN" ] && [ -z "$CERT" ] && command -v openssl >/dev/null 2>&1; then
+  for pc in /usr/local/lscp/conf/cert.pem /usr/local/lscp/conf/server.crt; do
+    [ -f "$pc" ] || continue
+    cand="$(openssl x509 -in "$pc" -noout -ext subjectAltName 2>/dev/null \
+            | tr ',' '\n' | sed -n 's/^ *DNS://p' | grep -v '^\*' | head -1 || true)"
+    if [ -n "$cand" ]; then
+      DOMAIN="$cand"; say "alan adi CyberPanel sertifikasindan alindi: ${DOMAIN}"; break
+    fi
+  done
+fi
 
 if [ "$TLS" = "1" ] && [ -n "$DOMAIN" ] && [ -z "$CERT" ]; then
   # --- alan adi bu sunucuyu mu gosteriyor? ---
@@ -192,7 +205,7 @@ fi
 AGFO_SSH_PASSWORD="${AGFO_SSH_PASSWORD:-$GEN_PASSWORD}" \
 AGFO_CFG_PORT="$PORT" AGFO_CFG_BIND="$BIND" AGFO_CFG_TLS="$TLS" \
 AGFO_CFG_CERT="${CERT:-}" AGFO_CFG_KEY="${KEY:-}" \
-AGFO_CFG_ALLOW="$ALLOW_IPS" AGFO_CFG_LOG="$SESSION_LOG" \
+AGFO_CFG_ALLOW="$ALLOW_IPS" AGFO_CFG_ALLOW_SET="${AGFO_SSH_ALLOW_IPS+1}" AGFO_CFG_LOG="$SESSION_LOG" \
 AGFO_CFG_PUBLIC="$PUBLIC_URL" \
 AGFO_CFG_FRAME="${AGFO_SSH_FRAME_ANCESTORS:-}" AGFO_CFG_FRAME_SET="$FRAME_SET" \
 AGFO_CFG_SAMESITE="${AGFO_SSH_COOKIE_SAMESITE:-}" AGFO_CFG_SAMESITE_SET="$SAMESITE_SET" \
@@ -223,7 +236,8 @@ if os.environ.get("AGFO_CFG_CERT"):
     cfg["tls"]["cert"] = os.environ["AGFO_CFG_CERT"]
     cfg["tls"]["key"] = os.environ["AGFO_CFG_KEY"]
 allow = [x.strip() for x in (os.environ.get("AGFO_CFG_ALLOW") or "").split(",") if x.strip()]
-cfg["allow_ips"] = allow
+if os.environ.get("AGFO_CFG_ALLOW_SET") == "1" or not existing:
+    cfg["allow_ips"] = allow  # verilmediyse mevcut IP kilidi korunur
 cfg["session_log"]["enabled"] = os.environ["AGFO_CFG_LOG"] == "1"
 cfg["public_url"] = os.environ.get("AGFO_CFG_PUBLIC") or ""
 

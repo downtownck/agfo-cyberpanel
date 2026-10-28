@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-CyberPanel kenar menusunu duzenler. (1.5.0)
+CyberPanel kenar menusunu duzenler. (1.5.1)
 
 Yapabildikleri:
   * Menu girdisi EKLER  - mevcut bir girdinin kalibini kopyalayarak
@@ -15,7 +15,9 @@ Ortam degiskenleri:
   AGFO_MENU_ENTRIES   "Etiket|https://adres" satirlari (yeni satirla ayrilmis)
   AGFO_MENU_REMOVE    "Etiket1,Etiket2" - silinecek girdiler
   AGFO_MENU_ANCHOR    kalibi kopyalanacak girdi (bos ise otomatik secilir)
-  AGFO_MENU_TARGET    self (ayni sekme, varsayilan) | blank (yeni sekme)
+  AGFO_MENU_TARGET    blank (yeni sekme, varsayilan) | self (ayni sekme)
+  AGFO_MENU_NEWTAB    adresine dokunulmadan sekmesi ayarlanacak girdiler
+                      (varsayilan "Package Runner"; "" = hicbiri)
   AGFO_MENU_ROOT      sablon dizini (varsayilan /usr/local/CyberCP)
   AGFO_MENU_DUMP      1 = her dosyada ilgili bolumu de bas
 """
@@ -27,9 +29,9 @@ import shutil
 import sys
 import time
 
-VERSION = "1.5.0"
+VERSION = "1.5.1"
 ROOT_DIRS = [d for d in (os.environ.get("AGFO_MENU_ROOT") or "/usr/local/CyberCP").split(",") if d.strip()]
-TARGET = (os.environ.get("AGFO_MENU_TARGET") or "self").strip().lower()
+TARGET = (os.environ.get("AGFO_MENU_TARGET") or "blank").strip().lower()
 DUMP = os.environ.get("AGFO_MENU_DUMP", "0") == "1"
 WINDOW = 40
 STAMP = time.strftime("%Y%m%d-%H%M%S")
@@ -38,6 +40,9 @@ ANCHOR_CANDIDATES = [a.strip() for a in (os.environ.get("AGFO_MENU_ANCHOR") or "
 ANCHOR_CANDIDATES += ["AGFO SSH Terminal", "Package Runner", "AGFO Root Terminal", "AGFO SafeGuard"]
 
 REMOVE = [x.strip() for x in (os.environ.get("AGFO_MENU_REMOVE") or "").split(",") if x.strip()]
+# Adresine dokunmadan yalnizca hedef sekmesi ayarlanacak (elle eklenmis) girdiler.
+_nt = os.environ.get("AGFO_MENU_NEWTAB")
+NEWTAB = [x.strip() for x in (_nt if _nt is not None else "Package Runner").split(",") if x.strip()]
 
 ENTRIES = []
 for line in (os.environ.get("AGFO_MENU_ENTRIES") or "").split("\n"):
@@ -140,7 +145,11 @@ def apply_attrs(text, url, title):
         return None
     out = re.sub(r'title\s*=\s*"[^"]*"', 'title="%s"' % title, out, count=1)
     out = re.sub(r"title\s*=\s*'[^']*'", "title='%s'" % title, out, count=1)
-    # hedef sekme
+    return set_target(out)
+
+
+def set_target(out):
+    """Ilk <a> etiketinin hedef sekmesini TARGET'a gore ayarlar."""
     out = re.sub(r'\s+target\s*=\s*"[^"]*"', "", out)
     out = re.sub(r"\s+target\s*=\s*'[^']*'", "", out)
     out = re.sub(r'\s+rel\s*=\s*"[^"]*"', "", out)
@@ -154,7 +163,7 @@ def apply_attrs(text, url, title):
 # ---------------------------------------------------------------------------
 
 def candidate_files():
-    needles = [label for label, _ in ENTRIES] + REMOVE + ANCHOR_CANDIDATES
+    needles = [label for label, _ in ENTRIES] + REMOVE + ANCHOR_CANDIDATES + NEWTAB
     hits = []
     for root in ROOT_DIRS:
         if not os.path.isdir(root):
@@ -220,6 +229,26 @@ class FileEditor(object):
             say("  silindi: %s (%d girdi)" % (label, removed))
         return removed
 
+    # --- yalnizca hedef sekme ---
+    def retarget(self, label):
+        idx = find_label(self.lines, label)
+        if idx is None:
+            return False
+        start, end, how, _ = pick_block(self.lines, idx)
+        if start is None:
+            return False
+        current = "".join(self.lines[start:end + 1])
+        if "<a" not in current:
+            return False
+        updated = set_target(current)
+        if updated == current:
+            return False
+        self.backup()
+        self.lines[start:end + 1] = [updated]
+        self.changed = True
+        say("  sekme ayarlandi: %s (%s)" % (label, "yeni sekme" if TARGET == "blank" else "ayni sekme"))
+        return True
+
     # --- ekleme / guncelleme ---
     def upsert(self, label, url, anchor_label):
         idx = find_label(self.lines, label)
@@ -268,7 +297,7 @@ class FileEditor(object):
 
 def main():
     say("surum %s" % VERSION)
-    if not ENTRIES and not REMOVE:
+    if not ENTRIES and not REMOVE and not NEWTAB:
         say("yapilacak is yok (AGFO_MENU_ENTRIES / AGFO_MENU_REMOVE bos).")
         return 0
     for label, url in ENTRIES:
@@ -300,6 +329,9 @@ def main():
                 editor.upsert(label, url, anchor)
         for label in REMOVE:
             editor.remove(label)
+        for label in NEWTAB:
+            if label not in REMOVE and label not in dict(ENTRIES):
+                editor.retarget(label)
         editor.save()
         if editor.changed:
             total += 1

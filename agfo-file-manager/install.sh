@@ -21,7 +21,7 @@ set -euo pipefail
 
 APP_NAME="AGFO File Manager"
 APP_SLUG="agfo-file-manager"
-APP_VERSION="1.0.0"
+APP_VERSION="1.0.1"
 INSTALL_DIR="/opt/${APP_SLUG}"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_PORT=18096
@@ -137,7 +137,7 @@ if [ -n "$DOMAIN" ]; then PUBLIC_URL="${SCHEME}://${DOMAIN}:${PORT}/"; else PUBL
 
 say "config.json yaziliyor"
 OUT="$(AGFO_FM_PASSWORD="${AGFO_FM_PASSWORD:-}" AGFO_CFG_PORT="$PORT" AGFO_CFG_BIND="$BIND" AGFO_CFG_TLS="$TLS" \
-AGFO_CFG_CERT="${CERT:-}" AGFO_CFG_KEY="${KEY:-}" AGFO_CFG_ALLOW="$ALLOW_IPS" AGFO_CFG_PUBLIC="$PUBLIC_URL" \
+AGFO_CFG_CERT="${CERT:-}" AGFO_CFG_KEY="${KEY:-}" AGFO_CFG_ALLOW="$ALLOW_IPS" AGFO_CFG_ALLOW_SET="${AGFO_FM_ALLOW_IPS+1}" AGFO_CFG_PUBLIC="$PUBLIC_URL" \
 AGFO_CFG_BPORT="$BACKEND_PORT" AGFO_FM_CONFIG_DIR="${INSTALL_DIR}/config" AGFO_CFG_APP="${INSTALL_DIR}/app" \
 "$PYBIN" - <<'PYEOF'
 import json, os, secrets, string, sys
@@ -151,7 +151,8 @@ cfg["public_url"] = os.environ.get("AGFO_CFG_PUBLIC") or ""
 cfg["tls"]["enabled"] = os.environ["AGFO_CFG_TLS"] == "1"
 if os.environ.get("AGFO_CFG_CERT"):
     cfg["tls"]["cert"], cfg["tls"]["key"] = os.environ["AGFO_CFG_CERT"], os.environ["AGFO_CFG_KEY"]
-cfg["allow_ips"] = [x.strip() for x in (os.environ.get("AGFO_CFG_ALLOW") or "").split(",") if x.strip()]
+if os.environ.get("AGFO_CFG_ALLOW_SET") == "1":  # verilmediyse mevcut IP kilidi korunur
+    cfg["allow_ips"] = [x.strip() for x in (os.environ.get("AGFO_CFG_ALLOW") or "").split(",") if x.strip()]
 cfg["backend"]["host"] = "127.0.0.1"
 cfg["backend"]["port"] = int(os.environ["AGFO_CFG_BPORT"])
 cfg["backend"]["key"] = cfg["backend"].get("key") or secrets.token_urlsafe(48)

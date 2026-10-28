@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# AGFO CyberPanel menu duzenleyici (1.5.0)
+# AGFO CyberPanel menu duzenleyici (1.5.1)
 #
 # Varsayilan davranis:
 #   - Menuye "AGFO SSH Terminal", "AGFO Firewall AI", "AGFO App Store" ve "AGFO File Manager"
@@ -12,7 +12,9 @@
 # Ortam degiskenleri:
 #   AGFO_MENU_REMOVE="A,B"      silinecek girdiler ("" = hicbiri)
 #   AGFO_MENU_ENTRIES="X|url"   eklenecek girdileri elle vermek icin
-#   AGFO_MENU_TARGET=self|blank ayni sekme / yeni sekme
+#   AGFO_MENU_TARGET=blank|self yeni sekme (varsayilan) / ayni sekme
+#   AGFO_MENU_DOMAIN=alanadi    IP yerine kullanilacak alan adi (verilmezse
+#                               CyberPanel 8090 sertifikasindan okunur)
 #   AGFO_MENU_NO_TOKEN=1        jetonsuz link yaz (panel sifre sorar)
 #   AGFO_MENU_ROOT=/usr/local/CyberCP
 #   AGFO_MENU_SKIP_RESTART=1    CyberPanel servisini yeniden baslatma
@@ -36,16 +38,9 @@ build_entry() {
   # uninstall.sh ayarlari korur ama app/ dizinini siler: o panel artik yok.
   [ -f "${dir}/app/server.py" ] || return 1
   local pub tok url
-  pub="$("$PYBIN" -c "import json;print(json.load(open('$cfg')).get('public_url') or '')" 2>/dev/null || true)"
+  pub="$("$PYBIN" "${SRC_DIR}/panel_url.py" "$cfg" "$label" || true)"
+  [ -n "$pub" ] || return 1
   tok="$("$PYBIN" -c "import json;print(json.load(open('$cfg')).get('auth',{}).get('login_token',''))" 2>/dev/null || true)"
-  if [ -z "$pub" ]; then
-    local port scheme ip
-    port="$("$PYBIN" -c "import json;print(json.load(open('$cfg'))['port'])" 2>/dev/null || true)"
-    [ -n "$port" ] || return 1
-    scheme="$("$PYBIN" -c "import json;print('https' if json.load(open('$cfg'))['tls'].get('enabled') else 'http')" 2>/dev/null || echo https)"
-    ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
-    pub="${scheme}://${ip}:${port}/"
-  fi
   url="${pub%/}/"
   local qs=""
   if [ "${AGFO_MENU_NO_TOKEN:-0}" != "1" ] && [ -n "$tok" ]; then
@@ -93,7 +88,7 @@ if [ -z "$ENTRIES" ] && [ -z "$REMOVE" ]; then
 fi
 
 AGFO_MENU_ENTRIES="$ENTRIES" AGFO_MENU_REMOVE="$REMOVE" \
-AGFO_MENU_TARGET="${AGFO_MENU_TARGET:-self}" \
+AGFO_MENU_TARGET="${AGFO_MENU_TARGET:-blank}" \
 AGFO_MENU_ROOT="${AGFO_MENU_ROOT:-/usr/local/CyberCP}" \
 AGFO_MENU_DUMP="${AGFO_MENU_DUMP:-0}" \
 "$PYBIN" "${SRC_DIR}/menu_patch.py"

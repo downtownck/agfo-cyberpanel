@@ -1,4 +1,4 @@
-# AGFO File Manager 1.0.0
+# AGFO File Manager 1.0.1
 
 CyberPanel sunucusu için **root yetkili web dosya yöneticisi**. Kök dizin `/`:
 `/root`, `/etc`, `/usr/local/lsws`, tüm sitelerin `/home/*` dizinleri dahil her
@@ -23,9 +23,9 @@ katmanı konmuştur.
 ## Kurulum
 
 ```bash
-unzip agfo-file-manager-1.0.0.zip && cd agfo-file-manager-1.0.0
+unzip agfo-file-manager-1.0.1.zip && cd agfo-file-manager-1.0.1
 AGFO_FM_ALLOW_IPS="sabit.ip.adresiniz" bash install.sh
-bash ../agfo-ssh-menu-1.5.0/install.sh     # CyberPanel menüsüne "AGFO File Manager"
+bash ../agfo-ssh-menu-1.5.1/install.sh     # CyberPanel menüsüne "AGFO File Manager"
 ```
 
 Kurulum sonunda adres, menü linki ve (ilk kurulumda) panel şifresi yazılır.

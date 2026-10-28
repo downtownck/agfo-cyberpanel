@@ -1,4 +1,4 @@
-# AGFO CyberPanel menü düzenleyici 1.5.0
+# AGFO CyberPanel menü düzenleyici 1.5.1
 
 CyberPanel kenar menüsündeki AGFO girdilerini düzenler: girdi **ekler**,
 mevcut girdinin adresini **günceller**, istenmeyen girdiyi **siler**.
@@ -10,7 +10,11 @@ Varsayılan çalıştırmada:
   ve giriş jetonundan otomatik üretilir — tıklayınca şifre sorulmaz.
 * **AGFO Root Terminal** ve **AGFO SafeGuard** girdileri kaldırılır; kaldırılmış
   bir AGFO panelinin (ör. App Store) girdisi de silinir.
-* Linkler aynı sekmede açılır (yeni sekme için `AGFO_MENU_TARGET=blank`).
+* AGFO linkleri **yeni sekmede** açılır; elle eklenmiş **Package Runner** girdisinin de
+  yalnızca sekmesi ayarlanır, adresine dokunulmaz (aynı sekme için `AGFO_MENU_TARGET=self`).
+* Bir panel IP adresiyle yayınlanıyorsa link, CyberPanel'in 8090 sertifikasındaki alan
+  adıyla yazılır — ama yalnızca panelin kendi sertifikası o alan adını kapsıyorsa.
+  Kapsamıyorsa kurulum, o paneli yeniden kurmanızı söyleyen bir uyarı basar.
 
 ```
 bash install.sh
@@ -19,7 +23,7 @@ bash install.sh
 Başka bir düzen isterseniz:
 
 ```
-AGFO_MENU_REMOVE=""  AGFO_MENU_TARGET=blank bash install.sh        # hiçbir şey silme
+AGFO_MENU_REMOVE=""  AGFO_MENU_TARGET=self bash install.sh         # hiçbir şey silme, aynı sekme
 AGFO_MENU_ENTRIES="Panelim|https://adres/" bash install.sh          # girdileri elle ver
 AGFO_MENU_NO_TOKEN=1 bash install.sh                                # jetonsuz link (şifre sorar)
 ```
@@ -28,7 +32,9 @@ AGFO_MENU_NO_TOKEN=1 bash install.sh                                # jetonsuz l
 |---|---|---|
 | `AGFO_MENU_ENTRIES` | kurulu panellerden | `Etiket\|https://adres` satırları |
 | `AGFO_MENU_REMOVE` | `AGFO Root Terminal,AGFO SafeGuard` | Silinecek girdiler |
-| `AGFO_MENU_TARGET` | `self` | `blank` = yeni sekme |
+| `AGFO_MENU_TARGET` | `blank` | `self` = aynı sekme |
+| `AGFO_MENU_NEWTAB` | `Package Runner` | Adresine dokunmadan sekmesi ayarlanacak girdiler (`""` = hiçbiri) |
+| `AGFO_MENU_DOMAIN` | 8090 sertifikasından | IP yerine kullanılacak alan adı |
 | `AGFO_MENU_NO_TOKEN` | `0` | `1` = linke giriş jetonu koyma |
 | `AGFO_MENU_ANCHOR` | otomatik | Kalıbı kopyalanacak girdi |
 | `AGFO_MENU_ROOT` | `/usr/local/CyberCP` | Şablon dizini |

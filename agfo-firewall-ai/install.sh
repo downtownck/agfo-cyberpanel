@@ -23,7 +23,7 @@ set -euo pipefail
 
 APP_NAME="AGFO Firewall AI"
 APP_SLUG="agfo-firewall-ai"
-APP_VERSION="1.1.1"
+APP_VERSION="1.1.2"
 INSTALL_DIR="/opt/${APP_SLUG}"
 UNIT_PATH="/etc/systemd/system/${APP_SLUG}.service"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -261,6 +261,19 @@ find "${INSTALL_DIR}/app" -type d -exec chmod 755 {} \;
 chmod +x "${INSTALL_DIR}/app/certwatch.sh"
 
 # --- 4. TLS ------------------------------------------------------------------
+# Alan adi verilmediyse CyberPanel'in kendi (8090) sertifikasindan oku: tarayici
+# 8090'i guvenli buluyorsa ayni alan adi bu panel icin de dogru olandir.
+if [ "$TLS" = "1" ] && [ -z "$DOMAIN" ] && [ -z "$CERT" ] && command -v openssl >/dev/null 2>&1; then
+  for pc in /usr/local/lscp/conf/cert.pem /usr/local/lscp/conf/server.crt; do
+    [ -f "$pc" ] || continue
+    cand="$(openssl x509 -in "$pc" -noout -ext subjectAltName 2>/dev/null \
+            | tr ',' '\n' | sed -n 's/^ *DNS://p' | grep -v '^\*' | head -1 || true)"
+    if [ -n "$cand" ]; then
+      DOMAIN="$cand"; say "alan adi CyberPanel sertifikasindan alindi: ${DOMAIN}"; break
+    fi
+  done
+fi
+
 if [ "$TLS" = "1" ] && [ -n "$DOMAIN" ] && [ -z "$CERT" ]; then
   LOCAL_IPS="$(hostname -I 2>/dev/null || true)"
   DOM_IP="$(getent ahostsv4 "$DOMAIN" 2>/dev/null | awk '{print $1}' | head -1 || true)"
@@ -328,7 +341,7 @@ fi
 say "config.json yaziliyor"
 AGFO_FW_PASSWORD="${AGFO_FW_PASSWORD:-$GEN_PASSWORD}" \
 AGFO_CFG_PORT="$PORT" AGFO_CFG_BIND="$BIND" AGFO_CFG_TLS="$TLS" \
-AGFO_CFG_CERT="${CERT:-}" AGFO_CFG_KEY="${KEY:-}" AGFO_CFG_ALLOW="$ALLOW_IPS" \
+AGFO_CFG_CERT="${CERT:-}" AGFO_CFG_KEY="${KEY:-}" AGFO_CFG_ALLOW="$ALLOW_IPS" AGFO_CFG_ALLOW_SET="${AGFO_FW_ALLOW_IPS+1}" \
 AGFO_CFG_PUBLIC="$PUBLIC_URL" AGFO_CFG_FRAME="${AGFO_FW_FRAME_ANCESTORS:-}" AGFO_CFG_FRAME_SET="$([ "${AGFO_FW_FRAME_ANCESTORS+x}" = "x" ] && echo 1 || echo 0)" \
 AGFO_CFG_TOKEN="$LOGIN_TOKEN" AGFO_CFG_DIR="${INSTALL_DIR}/config" AGFO_CFG_APP="${INSTALL_DIR}/app" \
 "$PYBIN" - <<'PYEOF'
@@ -353,7 +366,8 @@ cfg["tls"]["enabled"] = os.environ["AGFO_CFG_TLS"] == "1"
 if os.environ.get("AGFO_CFG_CERT"):
     cfg["tls"]["cert"] = os.environ["AGFO_CFG_CERT"]
     cfg["tls"]["key"] = os.environ["AGFO_CFG_KEY"]
-cfg["allow_ips"] = [x.strip() for x in (os.environ.get("AGFO_CFG_ALLOW") or "").split(",") if x.strip()]
+if os.environ.get("AGFO_CFG_ALLOW_SET") == "1":  # verilmediyse mevcut IP kilidi korunur
+    cfg["allow_ips"] = [x.strip() for x in (os.environ.get("AGFO_CFG_ALLOW") or "").split(",") if x.strip()]
 if os.environ.get("AGFO_CFG_FRAME_SET") == "1":
     cfg["frame_ancestors"] = [x.strip() for x in (os.environ.get("AGFO_CFG_FRAME") or "").split(",") if x.strip()]
 

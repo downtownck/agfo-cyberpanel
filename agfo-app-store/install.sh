@@ -22,7 +22,7 @@ set -euo pipefail
 
 APP_NAME="AGFO App Store"
 APP_SLUG="agfo-app-store"
-APP_VERSION="1.1.2"
+APP_VERSION="1.1.3"
 INSTALL_DIR="/opt/${APP_SLUG}"
 UNIT_PATH="/etc/systemd/system/${APP_SLUG}.service"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -177,7 +177,7 @@ LOGIN_TOKEN="${EXISTING_TOKEN}"
 say "config.json yaziliyor"
 AGFO_STORE_PASSWORD="${AGFO_STORE_PASSWORD:-$GEN_PASSWORD}" \
 AGFO_CFG_PORT="$PORT" AGFO_CFG_BIND="$BIND" AGFO_CFG_TLS="$TLS" \
-AGFO_CFG_CERT="${CERT:-}" AGFO_CFG_KEY="${KEY:-}" AGFO_CFG_ALLOW="$ALLOW_IPS" \
+AGFO_CFG_CERT="${CERT:-}" AGFO_CFG_KEY="${KEY:-}" AGFO_CFG_ALLOW="$ALLOW_IPS" AGFO_CFG_ALLOW_SET="${AGFO_STORE_ALLOW_IPS+1}" \
 AGFO_CFG_PUBLIC="$PUBLIC_URL" AGFO_CFG_TOKEN="$LOGIN_TOKEN" AGFO_CFG_CLI="$CP_CLI" \
 AGFO_CFG_PHP="${AGFO_STORE_PHP:-}" \
 AGFO_STORE_CONFIG_DIR="${INSTALL_DIR}/config" AGFO_CFG_APP="${INSTALL_DIR}/app" \
@@ -201,7 +201,8 @@ cfg["tls"]["enabled"] = os.environ["AGFO_CFG_TLS"] == "1"
 if os.environ.get("AGFO_CFG_CERT"):
     cfg["tls"]["cert"] = os.environ["AGFO_CFG_CERT"]
     cfg["tls"]["key"] = os.environ["AGFO_CFG_KEY"]
-cfg["allow_ips"] = [x.strip() for x in (os.environ.get("AGFO_CFG_ALLOW") or "").split(",") if x.strip()]
+if os.environ.get("AGFO_CFG_ALLOW_SET") == "1":  # verilmediyse mevcut IP kilidi korunur
+    cfg["allow_ips"] = [x.strip() for x in (os.environ.get("AGFO_CFG_ALLOW") or "").split(",") if x.strip()]
 if os.environ.get("AGFO_CFG_CLI") and not cfg["cyberpanel"].get("cli"):
     cfg["cyberpanel"]["cli"] = os.environ["AGFO_CFG_CLI"]
 if os.environ.get("AGFO_CFG_PHP"):
