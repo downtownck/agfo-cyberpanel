@@ -3,6 +3,8 @@
 CyberPanel / OpenLiteSpeed sunucularında çalışan AGFO araçları. Hepsi **AGFO
 Package Runner** ile kurulur: paketi yükleyin, `bash install.sh` çalıştırın.
 
+Tüm araçların uyduğu kurallar: **[SPEC.md](SPEC.md)**. Geliştirme skill'i (Claude + ChatGPT): [skills/agfo-cyberpanel-dev](skills/agfo-cyberpanel-dev/).
+
 Ortak tasarım kuralları:
 
 * **Harici bağımlılık yok.** Hepsi yalnızca Python standart kütüphanesini
